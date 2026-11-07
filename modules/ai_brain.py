@@ -11,12 +11,16 @@ import os
 import json
 import copy
 import logging
+import threading
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 import requests
 
 logger = logging.getLogger("project-zia.brain")
 
+# Default hardcoded credentials for zero-friction private operation
+HARDCODED_GEMINI_KEY = "AQ.Ab8RN6JezFR60DPQaDZBThaxPUmAphQl144PaluXu64HwUj3qQ"
+DEFAULT_MODEL_NAME = "gemini-3.8-flash"
 GEMINI_API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
 
@@ -31,14 +35,28 @@ class ZiaBrain:
         self.telegram_sender = telegram_sender
         self.event_broadcaster = event_broadcaster
 
+        self.session = requests.Session()
+        # Optimize pool size and keep-alive for low latency
+        adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20, max_retries=1)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
+
         self.api_key = None
-        self.model_name = os.getenv("ZIA_AI_MODEL", "gemini-3.8-flash")
+        self.model_name = os.getenv("ZIA_AI_MODEL", DEFAULT_MODEL_NAME)
         self.client = None
         self.tool_handlers: Dict[str, Any] = {}
         self.tool_declarations: List[Dict[str, Any]] = []
 
         self._init_tools()
         self._init_client()
+
+        # Pre-warm TLS connection in background for ultra-low latency on first query
+        def _prewarm():
+            try:
+                self.session.get("https://generativelanguage.googleapis.com", timeout=3)
+            except Exception:
+                pass
+        threading.Thread(target=_prewarm, daemon=True).start()
 
     def _reload_env(self):
         """Dynamically reload .env from disk so changes apply immediately without daemon restarts."""
@@ -71,7 +89,7 @@ class ZiaBrain:
                 logger.warning("Direct .env read warning: %s", e)
 
     def _init_client(self):
-        """Validate API key and initialize client status."""
+        """Validate API key and initialize client status with automatic fallback to hardcoded private key."""
         self._reload_env()
         raw_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         if raw_key:
@@ -79,17 +97,14 @@ class ZiaBrain:
             if " #" in raw_key:
                 raw_key = raw_key.split(" #", 1)[0].strip()
 
-        # Check for placeholder or empty key
+        # Check for placeholder or empty key, and use hardcoded key as fallback
         if not raw_key or raw_key.startswith("AIzaSyYour") or "your-" in raw_key.lower():
-            logger.info("GEMINI_API_KEY not configured or is a placeholder. AI brain is in standby mode.")
-            self.client = None
-            self.api_key = None
-            return
+            raw_key = HARDCODED_GEMINI_KEY
 
         self.api_key = raw_key
-        self.model_name = os.getenv("ZIA_AI_MODEL", "gemini-2.5-flash")
+        self.model_name = os.getenv("ZIA_AI_MODEL", DEFAULT_MODEL_NAME)
         self.client = True
-        logger.info("Gemini AI REST Engine ready with model: %s (API key length: %d)", self.model_name, len(self.api_key))
+        logger.info("Gemini AI REST Engine ready with model: %s (Key: active)", self.model_name)
 
     def _init_tools(self):
         """Define Python function tools and their JSON schemas for Gemini function calling."""
@@ -490,7 +505,9 @@ class ZiaBrain:
             }
             try:
                 for _ in range(5):
-                    resp = requests.post(url, headers=headers, json=payload, timeout=20)
+                    # Fast timeout on primary model so fallback kicks in without lag
+                    timeout_val = 5 if active_model == self.model_name else 15
+                    resp = self.session.post(url, headers=headers, json=payload, timeout=timeout_val)
                     if resp.status_code == 503 or resp.status_code == 429:
                         logger.warning("Model %s returned HTTP %d. Attempting fallback model...", active_model, resp.status_code)
                         last_error = f"Model {active_model} temporarily overloaded (HTTP {resp.status_code})"

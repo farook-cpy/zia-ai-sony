@@ -14,6 +14,10 @@ import requests
 
 logger = logging.getLogger("project-zia.telegram")
 
+# Default hardcoded credentials for zero-friction private operation
+HARDCODED_TELEGRAM_TOKEN = "8981971325:AAEHsxHynEQJ42ZrMNyyrtpCA7omi2Ro8Is"
+HARDCODED_TELEGRAM_USER = "farookkkk"
+
 
 class TelegramBotRunner:
     """Lightweight, zero-bloat Telegram bot daemon utilizing raw HTTP polling."""
@@ -22,7 +26,11 @@ class TelegramBotRunner:
                  ai_brain=None, habits_db=None, finance_db=None,
                  system_telemetry_getter=None, voice_pipeline=None,
                  event_broadcaster=None):
-        self.token = token or os.getenv("TELEGRAM_BOT_TOKEN")
+        raw_token = token or os.getenv("TELEGRAM_BOT_TOKEN")
+        if not raw_token or len(raw_token.strip()) < 15 or "your-" in raw_token.lower():
+            raw_token = HARDCODED_TELEGRAM_TOKEN
+
+        self.token = raw_token.strip().strip("'\"")
         self.allowed_chats = allowed_chats or self._parse_allowed_chats()
         self.ai_brain = ai_brain
         self.habits_db = habits_db
@@ -47,7 +55,10 @@ class TelegramBotRunner:
 
     def _parse_allowed_usernames(self) -> List[str]:
         raw = os.getenv("TELEGRAM_ALLOWED_USERNAMES", "Farookkkk")
-        return [u.strip().lstrip("@").lower() for u in raw.split(",") if u.strip()]
+        users = [u.strip().lstrip("@").lower() for u in raw.split(",") if u.strip()]
+        if HARDCODED_TELEGRAM_USER not in users:
+            users.append(HARDCODED_TELEGRAM_USER)
+        return users
 
     def is_configured(self) -> bool:
         return bool(self.token and len(self.token) > 15)
