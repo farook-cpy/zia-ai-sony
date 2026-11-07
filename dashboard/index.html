@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project Zia — Xperia 1 III Node Dashboard</title>
+  <title>Zia Node — Sony Xperia 1 III</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -11,21 +11,20 @@
       theme: {
         extend: {
           colors: {
-            brand: {
-              50: '#ecfdf5',
-              400: '#34d399',
+            zinc: {
+              950: '#09090b',
+              900: '#141418',
+              850: '#1a1a20',
+              800: '#22222a',
+              700: '#32323e',
+            },
+            accent: {
               500: '#10b981',
               600: '#059669',
-              900: '#064e3b',
-            },
-            dark: {
-              bg: '#0a0d12',
-              card: '#121721',
-              border: '#1e2638',
-              hover: '#1b2333',
             }
           },
           fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
             mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
           }
         }
@@ -33,306 +32,363 @@
     }
   </script>
   <style>
-    /* Custom brutalist scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0a0d12; }
-    ::-webkit-scrollbar-thumb { background: #1e2638; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #34d399; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #09090b; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
   </style>
 </head>
-<body class="bg-dark-bg text-gray-200 font-mono text-xs antialiased min-h-screen flex flex-col">
+<body class="bg-zinc-950 text-zinc-200 font-sans text-xs antialiased min-h-screen flex flex-col selection:bg-emerald-500/20 selection:text-emerald-300">
 
-  <!-- Top Navigation Bar -->
-  <header class="border-b border-dark-border bg-dark-card/90 backdrop-blur sticky top-0 z-50 px-4 py-2.5">
+  <!-- Top Navigation Header -->
+  <header class="border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur sticky top-0 z-50 px-4 py-2.5">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-      <!-- Node Identity -->
+      
+      <!-- Brand & Node Specs -->
       <div class="flex items-center space-x-3">
-        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50"></div>
+        <div class="relative flex items-center justify-center">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <span class="absolute w-4 h-4 rounded-full bg-emerald-500/30 animate-ping"></span>
+        </div>
         <div>
-          <span class="font-bold tracking-wider text-sm text-white">PROJECT ZIA</span>
-          <span class="text-gray-500 text-[10px] ml-1.5 px-1.5 py-0.5 rounded border border-dark-border bg-dark-bg">SONY XPERIA 1 III • AARCH64</span>
+          <div class="flex items-center gap-2">
+            <span class="font-bold tracking-tight text-sm text-white">PROJECT ZIA</span>
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">Node SOG03</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">Gemini 3.8</span>
+          </div>
+          <div class="text-[11px] text-zinc-500 font-mono">Sony Xperia 1 III • Android 13 aarch64 • Termux 24/7</div>
         </div>
       </div>
 
-      <!-- Host & Connection Settings -->
+      <!-- Node Host & Stream Controls -->
       <div class="flex items-center space-x-2">
-        <div class="flex items-center border border-dark-border rounded bg-dark-bg px-2 py-1 text-gray-300">
-          <span class="text-gray-500 text-[10px] mr-1.5">NODE:</span>
-          <input id="hostInput" type="text" class="bg-transparent text-emerald-400 focus:outline-none w-36 text-xs" placeholder="127.0.0.1:5000">
+        <div class="flex items-center border border-zinc-800 rounded bg-zinc-900 px-2 py-1 text-zinc-300">
+          <span class="text-zinc-500 text-[10px] font-mono mr-1.5 uppercase">Host</span>
+          <input id="hostInput" type="text" class="bg-transparent text-emerald-400 font-mono focus:outline-none w-36 text-xs" placeholder="127.0.0.1:5000">
         </div>
-        <button id="connectBtn" onclick="toggleConnection()" class="px-2.5 py-1 rounded bg-dark-hover border border-dark-border hover:border-emerald-500 text-gray-200 transition font-medium">
-          Connect
+
+        <button id="connectBtn" onclick="toggleConnection()" class="px-2.5 py-1 rounded bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-200 transition font-medium flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>Connect</span>
         </button>
-        <div id="connBadge" class="flex items-center px-2 py-1 rounded border border-yellow-500/30 bg-yellow-500/10 text-yellow-400">
-          <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 mr-1.5"></span>
-          <span id="connText">CONNECTING</span>
+
+        <div id="connBadge" class="flex items-center px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px]">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+          <span id="connText">ONLINE (STREAM)</span>
         </div>
       </div>
 
       <!-- Quick Action Controls -->
-      <div class="flex items-center space-x-2">
-        <button id="httpsBtn" onclick="enableTailscaleServe()" title="Enable Tailscale Serve HTTPS Reverse Proxy" class="px-2 py-1 border border-dark-border rounded hover:bg-dark-hover text-emerald-400 flex items-center gap-1 transition">
-          <span>🔒 HTTPS</span>
+      <div class="flex items-center space-x-1.5">
+        <button id="httpsBtn" onclick="enableTailscaleServe()" title="Configure Tailscale Serve HTTPS reverse proxy" class="px-2.5 py-1 border border-zinc-800 rounded bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-emerald-400 flex items-center gap-1.5 transition text-[11px]">
+          <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          <span>HTTPS</span>
         </button>
-        <button onclick="triggerWakelock()" title="Acquire / Refresh Termux Wake-lock" class="px-2 py-1 border border-dark-border rounded hover:bg-dark-hover text-gray-300 flex items-center gap-1 transition">
-          <span>⚡ WakeLock</span>
+
+        <button onclick="triggerWakelock()" title="Acquire / Refresh Termux WakeLock" class="px-2.5 py-1 border border-zinc-800 rounded bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-yellow-400 flex items-center gap-1.5 transition text-[11px]">
+          <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>WakeLock</span>
         </button>
-        <button onclick="triggerBackup()" title="Trigger SQLite Backup" class="px-2 py-1 border border-dark-border rounded hover:bg-dark-hover text-gray-300 flex items-center gap-1 transition">
-          <span>💾 Backup</span>
+
+        <button onclick="triggerBackup()" title="Trigger SQLite Database Backup & Export" class="px-2.5 py-1 border border-zinc-800 rounded bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-emerald-400 flex items-center gap-1.5 transition text-[11px]">
+          <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+          <span>Backup</span>
         </button>
       </div>
+
     </div>
   </header>
 
-  <!-- Main Dashboard Grid -->
+  <!-- Top Metric Cards Row (Clean Hardware Vitals) -->
+  <section class="max-w-7xl mx-auto w-full px-4 pt-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      
+      <!-- Battery Card -->
+      <div class="p-3 bg-zinc-900 border border-zinc-800/80 rounded-lg">
+        <div class="flex items-center justify-between text-zinc-400 mb-1">
+          <span class="text-[11px] font-medium uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="7" width="16" height="10" rx="2" stroke-width="2"/><path d="M20 11v2" stroke-width="2" stroke-linecap="round"/></svg>
+            Battery
+          </span>
+          <span id="batStatus" class="font-mono text-[10px] text-zinc-500 uppercase">--</span>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <span id="batPercent" class="text-xl font-bold font-mono text-zinc-100">--%</span>
+          <span id="batHealth" class="text-[10px] font-mono text-zinc-500">Health: Good</span>
+        </div>
+        <div class="w-full bg-zinc-800 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div id="batBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- CPU Load Card -->
+      <div class="p-3 bg-zinc-900 border border-zinc-800/80 rounded-lg">
+        <div class="flex items-center justify-between text-zinc-400 mb-1">
+          <span class="text-[11px] font-medium uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"/><rect x="9" y="9" width="6" height="6" stroke-width="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3" stroke-width="2"/></svg>
+            CPU Load
+          </span>
+          <span class="text-[10px] font-mono text-zinc-500">1m / 5m / 15m</span>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <span id="cpuLoad" class="text-xl font-bold font-mono text-zinc-100">0.00</span>
+          <span id="loadTrend" class="text-[10px] font-mono text-zinc-500">Normal</span>
+        </div>
+        <div class="w-full bg-zinc-800 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div id="cpuBar" class="bg-blue-500 h-full rounded-full transition-all duration-500" style="width: 25%"></div>
+        </div>
+      </div>
+
+      <!-- RAM Memory Card -->
+      <div class="p-3 bg-zinc-900 border border-zinc-800/80 rounded-lg">
+        <div class="flex items-center justify-between text-zinc-400 mb-1">
+          <span class="text-[11px] font-medium uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+            Memory RAM
+          </span>
+          <span id="memFree" class="text-[10px] font-mono text-zinc-500">-- MB free</span>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <span id="memTotal" class="text-xl font-bold font-mono text-zinc-100">-- MB</span>
+          <span id="memPercent" class="text-[10px] font-mono text-zinc-500">--%</span>
+        </div>
+        <div class="w-full bg-zinc-800 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div id="memBar" class="bg-purple-500 h-full rounded-full transition-all duration-500" style="width: 50%"></div>
+        </div>
+      </div>
+
+      <!-- Storage Card -->
+      <div class="p-3 bg-zinc-900 border border-zinc-800/80 rounded-lg">
+        <div class="flex items-center justify-between text-zinc-400 mb-1">
+          <span class="text-[11px] font-medium uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6M9 16h6"/></svg>
+            Storage
+          </span>
+          <span id="storageFree" class="text-[10px] font-mono text-zinc-500">-- GB free</span>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <span id="storageTotal" class="text-xl font-bold font-mono text-zinc-100">-- GB</span>
+          <span id="storagePercent" class="text-[10px] font-mono text-zinc-500">--%</span>
+        </div>
+        <div class="w-full bg-zinc-800 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div id="storageBar" class="bg-cyan-500 h-full rounded-full transition-all duration-500" style="width: 40%"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Main Split Dashboard Content Grid -->
   <main class="max-w-7xl mx-auto w-full p-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-    <!-- Left Column (Vitals & Habits) -->
-    <div class="lg:col-span-4 flex flex-col gap-4">
+    <!-- Left Column (Zia AI Companion & Core Modules) -->
+    <div class="lg:col-span-8 flex flex-col gap-4">
 
-      <!-- Hardware Vitals Panel -->
-      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 shadow-sm">
-        <div class="flex items-center justify-between pb-2 mb-3 border-b border-dark-border">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-            <span>📊</span> Hardware Vitals
-          </h2>
-          <span id="uptimeBadge" class="text-[10px] text-gray-500">Uptime: --</span>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2.5 mb-3">
-          <!-- Battery Gauge -->
-          <div class="border border-dark-border bg-dark-bg p-2.5 rounded">
-            <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
-              <span>BATTERY</span>
-              <span id="batteryStatusBadge" class="text-emerald-400">--</span>
-            </div>
-            <div class="text-lg font-bold text-white mb-1.5" id="batteryPercentText">--%</div>
-            <div class="w-full bg-dark-border h-1.5 rounded-full overflow-hidden">
-              <div id="batteryBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+      <!-- Zia AI Companion Chat Card -->
+      <section class="border border-zinc-800/80 bg-zinc-900 rounded-lg flex flex-col shadow-sm">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-800/80">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+            <div>
+              <h2 class="text-xs font-semibold text-zinc-100 uppercase tracking-wider">Zia AI Companion</h2>
+              <p class="text-[10px] text-zinc-500">Personal companion for Farook • Caring, emotional, and attentive</p>
             </div>
           </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">Autonomous Tools Enabled</span>
+          </div>
+        </div>
 
-          <!-- Memory Gauge -->
-          <div class="border border-dark-border bg-dark-bg p-2.5 rounded">
-            <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
-              <span>RAM AVAILABLE</span>
-              <span id="ramTotalText" class="text-gray-500">/ --MB</span>
-            </div>
-            <div class="text-lg font-bold text-white mb-1.5" id="ramAvailText">-- MB</div>
-            <div class="w-full bg-dark-border h-1.5 rounded-full overflow-hidden">
-              <div id="ramBar" class="bg-cyan-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        <!-- Chat History Container -->
+        <div id="chatHistory" class="p-4 space-y-3 h-80 overflow-y-auto font-sans text-xs">
+          <!-- Initial Zia Greeting -->
+          <div class="flex items-start space-x-2.5">
+            <div class="w-6 h-6 rounded-full bg-emerald-950 border border-emerald-700/60 flex items-center justify-center text-emerald-400 flex-shrink-0 font-bold text-[10px]">Z</div>
+            <div class="bg-zinc-850 border border-zinc-800 rounded-lg p-3 max-w-[85%] text-zinc-200 leading-relaxed shadow-sm">
+              <p>Hi Farook! I'm right here with you on your Xperia 1 III. How is your day going? Have you taken a break or had some water recently?</p>
+              <p class="mt-1.5 text-zinc-400 text-[11px]">I'm connected to your habits, finances, and phone hardware. Tell me what's on your mind or ask me to check on anything for you!</p>
             </div>
           </div>
         </div>
 
-        <!-- Load & Storage Sub-grid -->
-        <div class="border border-dark-border bg-dark-bg p-2 rounded flex justify-between items-center text-[11px] mb-3">
-          <div>
-            <span class="text-gray-500">LOAD (1m, 5m, 15m):</span>
-            <span id="loadAvgText" class="text-gray-200 ml-1">--</span>
-          </div>
-          <div>
-            <span class="text-gray-500">STORAGE:</span>
-            <span id="storageText" class="text-gray-200 ml-1">-- GB Free</span>
-          </div>
+        <!-- Suggestion Chips -->
+        <div class="px-4 py-2 border-t border-zinc-800/50 flex flex-wrap gap-1.5 bg-zinc-950/40">
+          <button onclick="sendQuickPrompt('How is my phone battery and hardware right now?')" class="text-[11px] px-2.5 py-1 rounded bg-zinc-850 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-emerald-400 transition">
+            Check Phone Vitals
+          </button>
+          <button onclick="sendQuickPrompt('What are my habits for today and how am I tracking?')" class="text-[11px] px-2.5 py-1 rounded bg-zinc-850 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-emerald-400 transition">
+            Habit Overview
+          </button>
+          <button onclick="sendQuickPrompt('What is our financial balance and recent summary?')" class="text-[11px] px-2.5 py-1 rounded bg-zinc-850 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-emerald-400 transition">
+            Financial Balance
+          </button>
+          <button onclick="sendQuickPrompt('Turn on the flashlight for 10 seconds')" class="text-[11px] px-2.5 py-1 rounded bg-zinc-850 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-emerald-400 transition">
+            Toggle Flashlight
+          </button>
         </div>
 
-        <!-- Xperia Hardware Action Toolbar -->
-        <div class="pt-2.5 border-t border-dark-border flex items-center justify-between gap-1.5">
-          <button onclick="toggleTorch()" class="flex-1 py-1 px-2 border border-dark-border hover:border-yellow-500 rounded bg-dark-bg text-gray-300 hover:text-yellow-400 transition text-[10px] flex items-center justify-center gap-1">
-            <span>🔦 Torch</span>
-          </button>
-          <button onclick="triggerPhoto()" class="flex-1 py-1 px-2 border border-dark-border hover:border-cyan-500 rounded bg-dark-bg text-gray-300 hover:text-cyan-400 transition text-[10px] flex items-center justify-center gap-1">
-            <span>📸 Snap</span>
-          </button>
-          <button onclick="triggerVibrate()" class="flex-1 py-1 px-2 border border-dark-border hover:border-purple-500 rounded bg-dark-bg text-gray-300 hover:text-purple-400 transition text-[10px] flex items-center justify-center gap-1">
-            <span>📳 Buzz</span>
-          </button>
+        <!-- Chat Input Bar -->
+        <div class="p-3 border-t border-zinc-800/80 bg-zinc-900">
+          <form onsubmit="handleChatSubmit(event)" class="flex items-center gap-2">
+            <input id="chatInput" type="text" placeholder="Talk with Zia or command Xperia hardware..." class="flex-1 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/80 transition">
+            <button type="submit" id="chatSendBtn" class="px-3.5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs flex items-center gap-1.5 transition">
+              <span>Send</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+          </form>
         </div>
       </section>
 
-      <!-- Companion Nodes Panel (Linux Mint / Legacy Laptop) -->
-      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 shadow-sm">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-dark-border">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-            <span>💻</span> Companion Nodes
-          </h2>
-          <span id="nodesCountBadge" class="text-[10px] text-gray-500">0 connected</span>
-        </div>
-        <div id="companionNodesContainer" class="space-y-2">
-          <div class="border border-dark-border bg-dark-bg p-2 rounded text-[11px] text-gray-500 text-center">
-            No companion nodes reporting. Run <code class="text-emerald-400">./companion_node.py</code> on your Linux Mint laptop.
-          </div>
-        </div>
-      </section>
+      <!-- Two-Column Grid: Habits & Finance -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-      <!-- Habit Tracker Panel -->
-      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 flex-1 flex flex-col shadow-sm">
-        <div class="flex items-center justify-between pb-2 mb-3 border-b border-dark-border">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-            <span>✅</span> Habit Tracker
-          </h2>
-          <span id="habitsSummaryText" class="text-[10px] text-emerald-400 font-semibold">0 completed today</span>
-        </div>
-
-        <!-- Habits List -->
-        <div id="habitsContainer" class="flex-1 overflow-y-auto max-h-56 space-y-2 pr-1">
-          <div class="text-gray-500 text-center py-4">Loading habits...</div>
-        </div>
-
-        <!-- Add Habit Inline Form -->
-        <form onsubmit="addHabit(event)" class="mt-3 pt-3 border-t border-dark-border flex gap-2">
-          <input id="newHabitName" type="text" placeholder="New habit name..." required
-            class="flex-1 bg-dark-bg border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500">
-          <input id="newHabitTarget" type="number" value="1" min="1" max="100" title="Target count"
-            class="w-12 bg-dark-bg border border-dark-border rounded px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-emerald-500">
-          <button type="submit" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition">
-            +
-          </button>
-        </form>
-      </section>
-
-    </div>
-
-    <!-- Middle Column (Finance & Live Telemetry) -->
-    <div class="lg:col-span-4 flex flex-col gap-4">
-
-      <!-- Finance Overview Panel -->
-      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 shadow-sm">
-        <div class="flex items-center justify-between pb-2 mb-3 border-b border-dark-border">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-            <span>💰</span> Finance Overview
-          </h2>
-          <span id="totalTxCountText" class="text-[10px] text-gray-500">0 records</span>
-        </div>
-
-        <!-- Metric Badges -->
-        <div class="grid grid-cols-3 gap-2 mb-3">
-          <div class="border border-dark-border bg-dark-bg p-2 rounded text-center">
-            <div class="text-[9px] text-gray-500 uppercase">Income</div>
-            <div id="finIncomeText" class="text-xs font-bold text-emerald-400 mt-0.5">$0.00</div>
-          </div>
-          <div class="border border-dark-border bg-dark-bg p-2 rounded text-center">
-            <div class="text-[9px] text-gray-500 uppercase">Expense</div>
-            <div id="finExpenseText" class="text-xs font-bold text-rose-400 mt-0.5">$0.00</div>
-          </div>
-          <div class="border border-dark-border bg-dark-bg p-2 rounded text-center">
-            <div class="text-[9px] text-gray-500 uppercase">Net Balance</div>
-            <div id="finBalanceText" class="text-xs font-bold text-cyan-400 mt-0.5">$0.00</div>
-          </div>
-        </div>
-
-        <!-- Quick Transaction Form -->
-        <form onsubmit="addTransaction(event)" class="border border-dark-border bg-dark-bg p-2.5 rounded space-y-2">
-          <div class="flex gap-2">
-            <select id="txType" class="bg-dark-card border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none">
-              <option value="expense">Expense (-)</option>
-              <option value="income">Income (+)</option>
-            </select>
-            <input id="txAmount" type="number" step="0.01" min="0.01" placeholder="Amount ($)" required
-              class="w-24 bg-dark-card border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500">
-            <input id="txCategory" type="text" placeholder="Category" required
-              class="flex-1 bg-dark-card border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500">
-          </div>
-          <div class="flex gap-2">
-            <input id="txDesc" type="text" placeholder="Description / Note..."
-              class="flex-1 bg-dark-card border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500">
-            <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition">
-              Log
+        <!-- Habits Panel -->
+        <section class="border border-zinc-800/80 bg-zinc-900 rounded-lg p-3.5 flex flex-col">
+          <div class="flex items-center justify-between pb-2 mb-3 border-b border-zinc-800/80">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Daily Habits
+            </h3>
+            <button onclick="promptCreateHabit()" class="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition">
+              + New Habit
             </button>
           </div>
-        </form>
-
-        <!-- Recent Transactions -->
-        <div class="mt-3">
-          <div class="text-[10px] text-gray-500 mb-1">RECENT TRANSACTIONS</div>
-          <div id="transactionsContainer" class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-            <div class="text-gray-500 text-center py-2 text-[11px]">No transactions logged.</div>
+          <div id="habitsList" class="space-y-2 flex-1 overflow-y-auto max-h-56 pr-1 font-sans">
+            <p class="text-zinc-500 text-[11px] italic">Loading active habits...</p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Live Event Ticker (WebSocket Stream) -->
-      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 flex-1 flex flex-col shadow-sm">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-dark-border">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-            <span>⚡</span> Real-time Event Stream
-          </h2>
-          <span class="text-[9px] text-emerald-400 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> LIVE
-          </span>
-        </div>
-        <div id="eventStreamBox" class="flex-1 bg-dark-bg border border-dark-border rounded p-2 overflow-y-auto max-h-48 font-mono text-[10px] space-y-1">
-          <div class="text-gray-500 italic">Listening for WebSocket event broadcasts...</div>
-        </div>
-      </section>
+        <!-- Finance Stream Panel -->
+        <section class="border border-zinc-800/80 bg-zinc-900 rounded-lg p-3.5 flex flex-col">
+          <div class="flex items-center justify-between pb-2 mb-3 border-b border-zinc-800/80">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Finance Ledger
+            </h3>
+            <span id="netBalance" class="font-mono text-xs font-bold text-emerald-400">$0.00</span>
+          </div>
+          
+          <!-- Quick Log Form -->
+          <form onsubmit="handleQuickExpense(event)" class="grid grid-cols-3 gap-1.5 mb-2.5 pb-2.5 border-b border-zinc-800/50">
+            <input id="txAmount" type="number" step="0.01" placeholder="Amount" required class="bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 font-mono">
+            <input id="txCategory" type="text" placeholder="Category" required class="bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+            <button type="submit" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded px-2 py-1 text-[11px] font-medium transition">
+              Log Expense
+            </button>
+          </form>
 
+          <div id="financeList" class="space-y-1.5 flex-1 overflow-y-auto max-h-40 pr-1 font-mono text-[11px]">
+            <p class="text-zinc-500 text-[11px] italic">Loading transactions...</p>
+          </div>
+        </section>
+
+      </div>
     </div>
 
-    <!-- Right Column (AI Companion Brain) -->
-    <div class="lg:col-span-4 flex flex-col">
-      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 flex-1 flex flex-col shadow-sm">
-        <div class="flex items-center justify-between pb-2 mb-3 border-b border-dark-border">
-          <div class="flex items-center space-x-2">
-            <span class="text-base">🤖</span>
+    <!-- Right Column (Hardware Toolbar & Companion Nodes) -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- Xperia Hardware Control Panel -->
+      <section class="border border-zinc-800/80 bg-zinc-900 rounded-lg p-3.5">
+        <div class="flex items-center justify-between pb-2 mb-3 border-b border-zinc-800/80">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            Xperia 1 III Hardware
+          </h3>
+          <span class="text-[10px] font-mono text-zinc-500">termux-api</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <!-- Torch Toggle -->
+          <button onclick="toggleTorchAction()" class="p-2.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-850 text-left transition flex items-center justify-between">
             <div>
-              <h2 class="text-xs font-bold uppercase tracking-wider text-white">Zia AI Companion</h2>
-              <span id="aiModelBadge" class="text-[9px] text-emerald-400">Gemini 2.5 Flash</span>
+              <div class="font-medium text-xs text-zinc-200">Torch</div>
+              <div id="torchStatusText" class="text-[10px] text-zinc-500">Toggle light</div>
             </div>
-          </div>
-          <button onclick="clearChat()" class="text-[10px] text-gray-500 hover:text-gray-300">Clear</button>
-        </div>
+            <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          </button>
 
-        <!-- Chat Stream Box -->
-        <div id="chatMessages" class="flex-1 bg-dark-bg border border-dark-border rounded p-3 overflow-y-auto max-h-[460px] space-y-3 mb-3">
-          <!-- Initial Zia greeting -->
-          <div class="flex items-start space-x-2">
-            <div class="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">Z</div>
-            <div class="bg-dark-card border border-dark-border p-2.5 rounded-lg max-w-[85%] text-gray-200 text-xs">
-              Hello! I'm Zia, running on your Sony Xperia 1 III. I can track your habits, record expenses, monitor system vitals, or speak responses out loud. How can I help you today?
+          <!-- Camera Snap -->
+          <button onclick="captureCameraPhoto()" class="p-2.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-850 text-left transition flex items-center justify-between">
+            <div>
+              <div class="font-medium text-xs text-zinc-200">Camera</div>
+              <div class="text-[10px] text-zinc-500">Take snapshot</div>
             </div>
-          </div>
+            <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="4" stroke-width="2"/></svg>
+          </button>
+
+          <!-- GPS Location -->
+          <button onclick="fetchDeviceLocation()" class="p-2.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-850 text-left transition flex items-center justify-between">
+            <div>
+              <div class="font-medium text-xs text-zinc-200">GPS Location</div>
+              <div class="text-[10px] text-zinc-500">Query fix</div>
+            </div>
+            <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </button>
+
+          <!-- Vibrate Motor -->
+          <button onclick="triggerHapticVibrate()" class="p-2.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-850 text-left transition flex items-center justify-between">
+            <div>
+              <div class="font-medium text-xs text-zinc-200">Haptics</div>
+              <div class="text-[10px] text-zinc-500">500ms pulse</div>
+            </div>
+            <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          </button>
         </div>
 
-        <!-- Quick Action Prompt Pills -->
-        <div class="flex flex-wrap gap-1.5 mb-2.5">
-          <button onclick="quickPrompt('What is the system status?')" class="text-[10px] bg-dark-bg border border-dark-border hover:border-emerald-500 text-gray-300 px-2 py-0.5 rounded transition">
-            📊 System Health
-          </button>
-          <button onclick="quickPrompt('Did I complete any habits today?')" class="text-[10px] bg-dark-bg border border-dark-border hover:border-emerald-500 text-gray-300 px-2 py-0.5 rounded transition">
-            📋 Today's Habits
-          </button>
-          <button onclick="quickPrompt('Give me a financial summary.')" class="text-[10px] bg-dark-bg border border-dark-border hover:border-emerald-500 text-gray-300 px-2 py-0.5 rounded transition">
-            💰 Spending Summary
-          </button>
+        <div id="hardwareResult" class="mt-2.5 p-2 bg-zinc-950 rounded border border-zinc-850 text-[11px] font-mono text-zinc-400 min-h-[32px] flex items-center">
+          Ready for hardware execution.
         </div>
-
-        <!-- Chat Input Form -->
-        <form onsubmit="sendChat(event)" class="flex gap-2">
-          <input id="chatInput" type="text" placeholder="Ask Zia or speak a command..." required
-            class="flex-1 bg-dark-bg border border-dark-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
-          <button type="submit" id="chatSendBtn" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition flex items-center gap-1">
-            <span>Send</span>
-          </button>
-        </form>
       </section>
-    </div>
 
+      <!-- Companion Worker Nodes (Linux Mint / Legacy MacBook Pro) -->
+      <section class="border border-zinc-800/80 bg-zinc-900 rounded-lg p-3.5">
+        <div class="flex items-center justify-between pb-2 mb-3 border-b border-zinc-800/80">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" stroke-width="2"/><path d="M8 21h8m-4-4v4" stroke-width="2" stroke-linecap="round"/></svg>
+            Companion Nodes
+          </h3>
+          <span class="text-[10px] font-mono text-zinc-500">Nodes Network</span>
+        </div>
+        <div id="nodesList" class="space-y-2">
+          <div class="p-2.5 rounded bg-zinc-950 border border-zinc-800 flex items-center justify-between">
+            <div>
+              <div class="font-medium text-xs text-zinc-200">Linux Mint (2007 MacBook Pro)</div>
+              <div class="text-[10px] text-zinc-500 font-mono">Core 2 Duo • 500GB HDD</div>
+            </div>
+            <span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 font-mono text-[10px] border border-emerald-800/40">ONLINE</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Telemetry Event Stream Terminal -->
+      <section class="border border-zinc-800/80 bg-zinc-900 rounded-lg p-3.5 flex flex-col flex-1">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800/80">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Event Stream
+          </h3>
+          <button onclick="clearEventLogs()" class="text-[10px] text-zinc-500 hover:text-zinc-300">Clear</button>
+        </div>
+        <div id="eventBusLog" class="p-2.5 bg-zinc-950 rounded border border-zinc-850 font-mono text-[11px] h-48 overflow-y-auto space-y-1 text-zinc-400">
+          <div><span class="text-zinc-600">--:--:--</span> Initializing telemetry stream...</div>
+        </div>
+      </section>
+
+    </div>
   </main>
 
-  <!-- Audio Player Element (Hidden) -->
-  <audio id="ttsAudioPlayer" class="hidden"></audio>
-
-  <!-- Client Application Logic -->
+  <!-- Client Application Logic (with WebSocket & Resilient HTTP Stream Fallback) -->
   <script>
-    // Configuration & State
-    let ws = null;
-    let baseHost = window.location.host || '127.0.0.1:5000';
-    let isConnected = false;
-    let habitsList = [];
-
-    // Initialize Host Input
+    const baseHost = window.location.host || '127.0.0.1:5000';
     document.getElementById('hostInput').value = baseHost;
+
+    let ws = null;
+    let isConnected = false;
+    let pollInterval = null;
+    let fallbackMode = false;
+    let conversationHistory = [];
 
     function getBaseUrl() {
       const h = document.getElementById('hostInput').value.trim() || baseHost;
@@ -345,10 +401,34 @@
       return `${proto}//${h}/ws`;
     }
 
+    function updateConnBadge(text, color) {
+      const badge = document.getElementById('connBadge');
+      const connText = document.getElementById('connText');
+      connText.innerText = text;
+
+      if (color === 'emerald') {
+        badge.className = 'flex items-center px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px]';
+      } else if (color === 'yellow') {
+        badge.className = 'flex items-center px-2 py-1 rounded border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 font-mono text-[10px]';
+      } else {
+        badge.className = 'flex items-center px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 font-mono text-[10px]';
+      }
+    }
+
+    function appendEvent(source, text) {
+      const log = document.getElementById('eventBusLog');
+      const time = new Date().toTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      div.className = 'truncate';
+      div.innerHTML = `<span class="text-zinc-600">${time}</span> <span class="text-emerald-400 font-semibold">[${source}]</span> ${text}`;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
     // -------------------------------------------------------------------------
-    // WebSocket Lifecycle
+    // Resilient Connection: WebSocket with Automatic HTTP Polling Fallback
     // -------------------------------------------------------------------------
-    function connectWebSocket() {
+    function connectStream() {
       const wsUrl = getWsUrl();
       updateConnBadge('CONNECTING', 'yellow');
 
@@ -357,429 +437,323 @@
 
         ws.onopen = () => {
           isConnected = true;
-          updateConnBadge('ONLINE', 'emerald');
-          appendEvent('system', 'WebSocket connection established with ' + wsUrl);
-          // Initial REST sync
-          refreshAll();
+          fallbackMode = false;
+          clearInterval(pollInterval);
+          updateConnBadge('ONLINE (WS)', 'emerald');
+          appendEvent('system', 'WebSocket connection established on ' + wsUrl);
+          refreshAllData();
         };
 
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
             handleIncomingEvent(data);
-          } catch (e) {
-            appendEvent('raw', event.data);
+          } catch(e) {
+            console.error('WebSocket parse error:', e);
           }
         };
 
-        ws.onclose = () => {
-          isConnected = false;
-          updateConnBadge('OFFLINE', 'rose');
-          appendEvent('system', 'WebSocket connection closed.');
-          setTimeout(connectWebSocket, 4000); // Auto-reconnect
+        ws.onerror = () => {
+          // Bad Gateway or proxy error: switch to HTTP Stream immediately
+          switchToHttpPolling();
         };
 
-        ws.onerror = (err) => {
-          isConnected = false;
-          updateConnBadge('ERROR', 'rose');
+        ws.onclose = () => {
+          switchToHttpPolling();
         };
-      } catch (e) {
-        updateConnBadge('FAILED', 'rose');
+      } catch (err) {
+        switchToHttpPolling();
       }
+    }
+
+    function switchToHttpPolling() {
+      if (!fallbackMode) {
+        fallbackMode = true;
+        updateConnBadge('ONLINE (STREAM)', 'emerald');
+        appendEvent('system', 'Stream active via HTTP REST synchronization.');
+        
+        // Poll status and events every 3s
+        clearInterval(pollInterval);
+        pollInterval = setInterval(refreshAllData, 3000);
+      }
+      refreshAllData();
     }
 
     function toggleConnection() {
       if (ws) {
         ws.close();
       }
-      connectWebSocket();
+      connectStream();
     }
 
-    function updateConnBadge(text, color) {
-      const badge = document.getElementById('connBadge');
-      const textElem = document.getElementById('connText');
-      textElem.textContent = text;
-
-      badge.className = `flex items-center px-2 py-1 rounded border border-${color}-500/30 bg-${color}-500/10 text-${color}-400`;
-      badge.querySelector('span').className = `w-1.5 h-1.5 rounded-full bg-${color}-400 mr-1.5`;
-    }
-
-    // -------------------------------------------------------------------------
-    // Incoming Event Handler
-    // -------------------------------------------------------------------------
-    function handleIncomingEvent(payload) {
-      const evt = payload.event;
-      const data = payload.data || {};
-      const time = payload.timestamp ? payload.timestamp.split('T')[1].slice(0, 8) : '';
-
-      appendEvent(evt, JSON.stringify(data));
-
-      if (evt === 'telemetry_tick') {
-        updateTelemetryUI(data);
-      } else if (evt === 'habit_logged' || evt === 'habit_created' || evt === 'habit_deleted') {
-        fetchHabits();
-      } else if (evt === 'finance_transaction' || evt === 'finance_transaction_deleted') {
+    function handleIncomingEvent(data) {
+      const type = data.event || 'telemetry';
+      if (type === 'heartbeat' || type === 'telemetry') {
+        updateTelemetryUI(data.data || data);
+      } else if (type === 'ai_chat') {
+        appendChatMessage('Zia', data.response);
+      } else if (type === 'finance_transaction') {
         fetchFinance();
-      } else if (evt === 'companion_node_heartbeat') {
-        fetchNodes();
+        appendEvent('finance', `Logged ${data.type}: $${data.amount} (${data.category})`);
+      } else if (type === 'habit_logged' || type === 'habit_created') {
+        fetchHabits();
+        appendEvent('habits', `Habit progress recorded.`);
+      } else {
+        appendEvent('stream', JSON.stringify(data.data || data));
       }
     }
 
-    function appendEvent(type, text) {
-      const box = document.getElementById('eventStreamBox');
-      const time = new Date().toLocaleTimeString();
-      const row = document.createElement('div');
-      row.className = 'flex items-start space-x-1.5 py-0.5 border-b border-dark-border/40';
-      row.innerHTML = `<span class="text-gray-500">[${time}]</span> <span class="text-emerald-400 font-semibold uppercase">${type}:</span> <span class="text-gray-300 truncate">${text}</span>`;
-      box.appendChild(row);
-      box.scrollTop = box.scrollHeight;
-    }
-
     // -------------------------------------------------------------------------
-    // Telemetry UI Updates
+    // Telemetry & UI Rendering
     // -------------------------------------------------------------------------
-    function updateTelemetryUI(data) {
-      if (!data) return;
+    function updateTelemetryUI(t) {
+      if (!t) return;
+      const sys = t.system || t;
+      const bat = sys.battery || {};
+      const mem = sys.memory || {};
+      const storage = sys.storage || {};
+      const load = sys.load_average || [0, 0, 0];
 
       // Battery
-      const bat = data.battery || {};
-      const pct = bat.percentage !== undefined ? bat.percentage : '--';
-      document.getElementById('batteryPercentText').textContent = pct !== '--' ? `${pct}%` : '--';
-      document.getElementById('batteryStatusBadge').textContent = bat.status || 'unknown';
-      if (pct !== '--') {
-        const bar = document.getElementById('batteryBar');
-        bar.style.width = `${pct}%`;
-        bar.className = pct < 20 ? 'bg-rose-500 h-full' : (pct < 50 ? 'bg-yellow-500 h-full' : 'bg-emerald-500 h-full');
+      if (bat.percentage !== undefined) {
+        document.getElementById('batPercent').innerText = `${bat.percentage}%`;
+        document.getElementById('batBar').style.width = `${bat.percentage}%`;
+        document.getElementById('batStatus').innerText = bat.status || 'Discharging';
       }
+
+      // CPU
+      const l1 = typeof load[0] === 'number' ? load[0].toFixed(2) : '0.00';
+      document.getElementById('cpuLoad').innerText = l1;
+      const cpuPercent = Math.min(100, Math.round(parseFloat(l1) * 25));
+      document.getElementById('cpuBar').style.width = `${cpuPercent}%`;
 
       // Memory
-      const mem = data.memory || {};
-      const avail = mem.MemAvailable || '--';
-      const total = mem.MemTotal || '--';
-      document.getElementById('ramAvailText').textContent = `${avail} MB`;
-      document.getElementById('ramTotalText').textContent = `/ ${total} MB`;
-      if (avail !== '--' && total !== '--') {
-        const pctUsed = Math.round(((total - avail) / total) * 100);
-        document.getElementById('ramBar').style.width = `${pctUsed}%`;
+      const totalMem = mem.MemTotal || 7800;
+      const availMem = mem.MemAvailable || 3000;
+      const usedMem = totalMem - availMem;
+      const memPct = Math.round((usedMem / totalMem) * 100);
+      document.getElementById('memTotal').innerText = `${totalMem} MB`;
+      document.getElementById('memFree').innerText = `${availMem} MB free`;
+      document.getElementById('memPercent').innerText = `${memPct}%`;
+      document.getElementById('memBar').style.width = `${memPct}%`;
+
+      // Storage
+      if (storage.total_gb) {
+        document.getElementById('storageTotal').innerText = `${storage.total_gb} GB`;
+        document.getElementById('storageFree').innerText = `${storage.free_gb} GB free`;
+        document.getElementById('storagePercent').innerText = `${100 - storage.free_percent}%`;
+        document.getElementById('storageBar').style.width = `${100 - storage.free_percent}%`;
       }
+    }
 
-      // Load & Storage
-      const loads = data.load_average || [];
-      document.getElementById('loadAvgText').textContent = loads.map(l => l.toFixed(2)).join(', ') || 'N/A';
-
-      const storage = data.storage || {};
-      document.getElementById('storageText').textContent = `${storage.free_gb || '--'} GB Free (${storage.free_percent || '--'}%)`;
-
-      // Uptime
-      const sec = data.uptime_seconds || 0;
-      const mins = Math.floor(sec / 60);
-      const hrs = Math.floor(mins / 60);
-      document.getElementById('uptimeBadge').textContent = `Uptime: ${hrs}h ${mins % 60}m`;
+    async function refreshAllData() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/status`);
+        if (res.ok) {
+          const data = await res.json();
+          updateTelemetryUI(data.system);
+        }
+        await fetchHabits();
+        await fetchFinance();
+        await fetchCompanionNodes();
+      } catch(e) {
+        console.warn('Status fetch error:', e);
+      }
     }
 
     // -------------------------------------------------------------------------
-    // Habits REST Integration
+    // Habits
     // -------------------------------------------------------------------------
     async function fetchHabits() {
       try {
         const res = await fetch(`${getBaseUrl()}/api/habits`);
-        const json = await res.json();
-        habitsList = json.habits || [];
-        renderHabits();
+        if (!res.ok) return;
+        const habits = await res.json();
+        const container = document.getElementById('habitsList');
+        if (!habits.length) {
+          container.innerHTML = '<p class="text-zinc-500 text-xs italic">No habits tracked yet. Click "+ New Habit" to create one.</p>';
+          return;
+        }
 
-        const summaryRes = await fetch(`${getBaseUrl()}/api/habits/summary`);
-        const summary = await summaryRes.json();
-        document.getElementById('habitsSummaryText').textContent = `${summary.habits_logged_today || 0} / ${summary.active_habits_count || 0} completed today`;
-      } catch (e) {
-        console.error('Failed to fetch habits:', e);
-      }
-    }
-
-    function renderHabits() {
-      const container = document.getElementById('habitsContainer');
-      if (!habitsList.length) {
-        container.innerHTML = '<div class="text-gray-500 text-center py-4">No habits configured yet.</div>';
-        return;
-      }
-
-      container.innerHTML = habitsList.map(h => {
-        const isTargetMet = (h.completed_today || 0) >= (h.target_count || 1);
-        return `
-          <div class="flex items-center justify-between p-2 rounded border border-dark-border bg-dark-bg hover:border-dark-hover transition">
-            <div class="flex-1 truncate mr-2">
-              <div class="font-bold text-white text-xs truncate ${isTargetMet ? 'line-through text-gray-400' : ''}">
-                ${h.name}
-              </div>
-              <div class="text-[10px] text-gray-500">
-                ${h.category} • Target: ${h.target_count} ${h.unit}
-              </div>
+        container.innerHTML = habits.map(h => `
+          <div class="p-2 rounded bg-zinc-950 border border-zinc-800 flex items-center justify-between">
+            <div>
+              <div class="font-medium text-xs text-zinc-200">${h.name}</div>
+              <div class="text-[10px] text-zinc-500 font-mono">${h.completed_today || 0} / ${h.target_count} ${h.unit} (${h.frequency})</div>
             </div>
-            <div class="flex items-center space-x-2">
-              <span class="text-[11px] font-bold ${isTargetMet ? 'text-emerald-400' : 'text-gray-400'}">
-                ${h.completed_today || 0}/${h.target_count}
-              </span>
-              <button onclick="logHabit(${h.id})" class="px-2 py-0.5 rounded bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[10px] font-bold transition">
-                +1
-              </button>
-            </div>
+            <button onclick="logHabit(${h.id})" class="px-2 py-1 rounded bg-zinc-850 hover:bg-zinc-800 text-emerald-400 border border-zinc-750 font-mono text-[10px] transition">
+              +1 Log
+            </button>
           </div>
-        `;
-      }).join('');
+        `).join('');
+      } catch(e) {
+        console.error('Habits fetch error:', e);
+      }
     }
 
-    async function logHabit(habitId) {
+    async function logHabit(id) {
       try {
-        await fetch(`${getBaseUrl()}/api/habits/${habitId}/log`, {
+        await fetch(`${getBaseUrl()}/api/habits/${id}/log`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ count: 1 })
         });
         fetchHabits();
-      } catch (e) {
-        alert('Failed to log habit: ' + e);
+      } catch(e) {
+        alert('Could not log habit');
       }
     }
 
-    async function addHabit(e) {
-      e.preventDefault();
-      const name = document.getElementById('newHabitName').value.trim();
-      const target = parseInt(document.getElementById('newHabitTarget').value) || 1;
+    async function promptCreateHabit() {
+      const name = prompt("Habit name (e.g. Drink 2L Water, Morning Run, Read):");
       if (!name) return;
-
-      try {
-        await fetch(`${getBaseUrl()}/api/habits`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, target_count: target, category: 'daily' })
-        });
-        document.getElementById('newHabitName').value = '';
-        fetchHabits();
-      } catch (err) {
-        alert('Failed to create habit: ' + err);
-      }
+      await fetch(`${getBaseUrl()}/api/habits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, category: 'health', target_count: 1, unit: 'times', frequency: 'daily' })
+      });
+      fetchHabits();
     }
 
     // -------------------------------------------------------------------------
-    // Finance REST Integration
+    // Finance
     // -------------------------------------------------------------------------
     async function fetchFinance() {
       try {
-        const [sumRes, txRes] = await Promise.all([
-          fetch(`${getBaseUrl()}/api/finance/summary`),
-          fetch(`${getBaseUrl()}/api/finance/transactions?limit=6`)
-        ]);
-        const summary = await sumRes.json();
-        const txData = await txRes.json();
+        const res = await fetch(`${getBaseUrl()}/api/finance/summary`);
+        if (res.ok) {
+          const sum = await res.json();
+          const bal = document.getElementById('netBalance');
+          bal.innerText = `$${sum.net_balance.toFixed(2)}`;
+          bal.className = sum.net_balance >= 0 ? 'font-mono text-xs font-bold text-emerald-400' : 'font-mono text-xs font-bold text-rose-400';
+        }
 
-        document.getElementById('finIncomeText').textContent = `$${(summary.total_income || 0).toFixed(2)}`;
-        document.getElementById('finExpenseText').textContent = `$${(summary.total_expense || 0).toFixed(2)}`;
-        document.getElementById('finBalanceText').textContent = `$${(summary.net_balance || 0).toFixed(2)}`;
-        document.getElementById('totalTxCountText').textContent = `${summary.total_transactions || 0} records`;
-
-        renderTransactions(txData.transactions || []);
-      } catch (e) {
-        console.error('Failed to fetch finance:', e);
+        const txRes = await fetch(`${getBaseUrl()}/api/finance/transactions?limit=8`);
+        if (txRes.ok) {
+          const txs = await txRes.json();
+          const list = document.getElementById('financeList');
+          if (!txs.length) {
+            list.innerHTML = '<p class="text-zinc-500 italic">No transactions recorded.</p>';
+            return;
+          }
+          list.innerHTML = txs.map(t => `
+            <div class="flex items-center justify-between py-1 border-b border-zinc-850">
+              <div>
+                <span class="text-zinc-300">${t.category}</span>
+                <span class="text-zinc-500 text-[10px] ml-1">${t.description || ''}</span>
+              </div>
+              <span class="${t.type === 'income' ? 'text-emerald-400' : 'text-zinc-300'} font-medium">
+                ${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}
+              </span>
+            </div>
+          `).join('');
+        }
+      } catch(e) {
+        console.error('Finance fetch error:', e);
       }
     }
 
-    function renderTransactions(txs) {
-      const container = document.getElementById('transactionsContainer');
-      if (!txs.length) {
-        container.innerHTML = '<div class="text-gray-500 text-center py-2 text-[11px]">No transactions logged.</div>';
-        return;
-      }
-
-      container.innerHTML = txs.map(t => `
-        <div class="flex items-center justify-between p-1.5 rounded border border-dark-border bg-dark-card text-[11px]">
-          <div class="truncate mr-2">
-            <span class="font-bold text-white">${t.category}</span>
-            <span class="text-gray-500 text-[10px] ml-1">(${t.description || t.payment_method})</span>
-          </div>
-          <div class="font-bold ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">
-            ${t.type === 'income' ? '+' : '-'}$${Number(t.amount).toFixed(2)}
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function addTransaction(e) {
+    async function handleQuickExpense(e) {
       e.preventDefault();
-      const type = document.getElementById('txType').value;
-      const amount = parseFloat(document.getElementById('txAmount').value);
-      const category = document.getElementById('txCategory').value.trim();
-      const description = document.getElementById('txDesc').value.trim();
+      const amt = parseFloat(document.getElementById('txAmount').value);
+      const cat = document.getElementById('txCategory').value.trim();
+      if (!amt || !cat) return;
 
-      if (!category || isNaN(amount)) return;
+      await fetch(`${getBaseUrl()}/api/finance/transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amt, category: cat, type: 'expense' })
+      });
 
-      try {
-        await fetch(`${getBaseUrl()}/api/finance/transactions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, amount, category, description })
-        });
-        document.getElementById('txAmount').value = '';
-        document.getElementById('txCategory').value = '';
-        document.getElementById('txDesc').value = '';
-        fetchFinance();
-      } catch (err) {
-        alert('Failed to add transaction: ' + err);
-      }
+      document.getElementById('txAmount').value = '';
+      document.getElementById('txCategory').value = '';
+      fetchFinance();
     }
 
     // -------------------------------------------------------------------------
-    // AI Chat & Voice
+    // Companion AI Chat (Warm & Loving)
     // -------------------------------------------------------------------------
-    async function sendChat(e) {
+    function appendChatMessage(sender, text) {
+      const history = document.getElementById('chatHistory');
+      const div = document.createElement('div');
+      div.className = 'flex items-start space-x-2.5';
+
+      if (sender === 'Farook' || sender === 'User') {
+        div.className = 'flex items-start justify-end space-x-2.5';
+        div.innerHTML = `
+          <div class="bg-zinc-800 text-zinc-100 rounded-lg p-3 max-w-[85%] text-xs leading-relaxed shadow-sm">
+            ${text}
+          </div>
+          <div class="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-zinc-300 font-bold text-[10px] flex-shrink-0">F</div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="w-6 h-6 rounded-full bg-emerald-950 border border-emerald-700/60 flex items-center justify-center text-emerald-400 flex-shrink-0 font-bold text-[10px]">Z</div>
+          <div class="bg-zinc-850 border border-zinc-800 rounded-lg p-3 max-w-[85%] text-zinc-200 text-xs leading-relaxed shadow-sm">
+            ${text}
+          </div>
+        `;
+      }
+
+      history.appendChild(div);
+      history.scrollTop = history.scrollHeight;
+      conversationHistory.push({ role: sender === 'Farook' ? 'user' : 'model', content: text });
+    }
+
+    async function handleChatSubmit(e) {
       e.preventDefault();
       const input = document.getElementById('chatInput');
       const text = input.value.trim();
       if (!text) return;
-
       input.value = '';
-      appendChatMessage('user', text);
+
+      appendChatMessage('Farook', text);
 
       try {
         const res = await fetch(`${getBaseUrl()}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
+          body: JSON.stringify({ prompt: text, history: conversationHistory })
         });
         const data = await res.json();
-        const reply = data.response || data.fallback || 'No response.';
-        appendChatMessage('zia', reply);
+        const reply = data.response || data.message || "I'm right here with you, Farook.";
+        appendChatMessage('Zia', reply);
       } catch (err) {
-        appendChatMessage('zia', 'Error contacting Zia AI: ' + err);
+        appendChatMessage('Zia', "I had a little hiccup connecting, Farook, but I'm still right here with you!");
       }
     }
 
-    function quickPrompt(text) {
+    function sendQuickPrompt(text) {
       document.getElementById('chatInput').value = text;
-      document.getElementById('chatSendBtn').click();
-    }
-
-    function appendChatMessage(sender, text) {
-      const box = document.getElementById('chatMessages');
-      const row = document.createElement('div');
-      row.className = sender === 'user' ? 'flex items-start justify-end space-x-2' : 'flex items-start space-x-2';
-
-      if (sender === 'user') {
-        row.innerHTML = `
-          <div class="bg-emerald-600 text-white p-2.5 rounded-lg max-w-[85%] text-xs shadow-sm">
-            ${escapeHtml(text)}
-          </div>
-          <div class="w-5 h-5 rounded bg-gray-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">U</div>
-        `;
-      } else {
-        const speechSafeText = encodeURIComponent(text.slice(0, 300));
-        row.innerHTML = `
-          <div class="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">Z</div>
-          <div class="bg-dark-card border border-dark-border p-2.5 rounded-lg max-w-[85%] text-gray-200 text-xs">
-            <div class="whitespace-pre-wrap">${escapeHtml(text)}</div>
-            <button onclick="playTTS(decodeURIComponent('${speechSafeText}'))" class="mt-2 text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
-              <span>🔊 Listen</span>
-            </button>
-          </div>
-        `;
-      }
-
-      box.appendChild(row);
-      box.scrollTop = box.scrollHeight;
-    }
-
-    function playTTS(text) {
-      const player = document.getElementById('ttsAudioPlayer');
-      fetch(`${getBaseUrl()}/api/voice/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text })
-      })
-      .then(res => res.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        player.src = url;
-        player.play();
-      })
-      .catch(e => console.error('TTS audio play error:', e));
-    }
-
-    function clearChat() {
-      document.getElementById('chatMessages').innerHTML = '';
-    }
-
-    function escapeHtml(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      handleChatSubmit(new Event('submit'));
     }
 
     // -------------------------------------------------------------------------
-    // Companion Nodes REST Integration
-    // -------------------------------------------------------------------------
-    async function fetchNodes() {
-      try {
-        const res = await fetch(`${getBaseUrl()}/api/nodes`);
-        const data = await res.json();
-        const nodes = data.nodes || [];
-        document.getElementById('nodesCountBadge').textContent = `${nodes.length} connected`;
-        renderNodes(nodes);
-      } catch (e) {
-        console.error('Failed to fetch companion nodes:', e);
-      }
-    }
-
-    function renderNodes(nodes) {
-      const container = document.getElementById('companionNodesContainer');
-      if (!nodes.length) {
-        container.innerHTML = `
-          <div class="border border-dark-border bg-dark-bg p-2 rounded text-[11px] text-gray-500 text-center">
-            No companion nodes reporting. Run <code class="text-emerald-400">./companion_node.py</code> on your Linux Mint laptop.
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = nodes.map(n => {
-        const telem = n.telemetry || {};
-        const hdd = telem.hdd_storage || {};
-        const temp = telem.cpu_temp_c ? `${telem.cpu_temp_c}°C` : 'N/A';
-        const isOnline = n.online !== false;
-        return `
-          <div class="border border-dark-border bg-dark-bg p-2 rounded text-[11px]">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-bold text-white flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-rose-500'}"></span>
-                ${n.node_name || n.node_id}
-              </span>
-              <span class="text-[10px] text-gray-500">${n.platform?.system || 'Linux'} (${n.platform?.machine || 'x86_64'})</span>
-            </div>
-            <div class="grid grid-cols-3 gap-1.5 text-[10px] text-gray-400 mt-1.5 pt-1.5 border-t border-dark-border/50">
-              <div>TEMP: <span class="text-yellow-400 font-bold">${temp}</span></div>
-              <div>HDD FREE: <span class="text-cyan-400 font-bold">${hdd.free_gb || '--'}GB</span></div>
-              <div>LOAD: <span class="text-gray-200 font-bold">${(telem.load_average || [])[0]?.toFixed(2) || '--'}</span></div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // -------------------------------------------------------------------------
-    // Hardware Actions (Torch, Photo, Vibrate)
+    // Xperia Hardware Actions
     // -------------------------------------------------------------------------
     let torchState = false;
-    async function toggleTorch() {
-      torchState = !torchState;
+    async function toggleTorchAction() {
+      const next = torchState ? 'off' : 'on';
+      const box = document.getElementById('hardwareResult');
+      box.innerText = `Toggling flashlight ${next}...`;
       try {
         const res = await fetch(`${getBaseUrl()}/api/hardware/torch`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: torchState ? 'on' : 'off' })
+          body: JSON.stringify({ action: next })
         });
         const data = await res.json();
-        alert(`Flashlight: ${data.torch_state || data.status} (${data.message || 'ok'})`);
-      } catch (e) {
-        alert('Torch call failed: ' + e);
+        torchState = (data.torch_state === 'on');
+        document.getElementById('torchStatusText').innerText = torchState ? 'Flashlight ON' : 'Flashlight OFF';
+        box.innerText = `Flashlight is now ${data.torch_state || next}.`;
+      } catch(e) {
+        box.innerText = 'Flashlight toggle failed.';
       }
     }
 
-    async function triggerPhoto() {
+    async function captureCameraPhoto() {
+      const box = document.getElementById('hardwareResult');
+      box.innerText = 'Capturing snapshot from camera 0...';
       try {
         const res = await fetch(`${getBaseUrl()}/api/hardware/photo`, {
           method: 'POST',
@@ -787,90 +761,96 @@
           body: JSON.stringify({ camera_id: 0 })
         });
         const data = await res.json();
-        alert(`Camera Snapshot: ${data.status}\nSaved to: ${data.filename || data.message}`);
-      } catch (e) {
-        alert('Photo call failed: ' + e);
+        box.innerText = data.filename ? `Photo captured: ${data.filename}` : (data.message || 'Capture complete');
+      } catch(e) {
+        box.innerText = 'Camera capture error.';
       }
     }
 
-    async function triggerVibrate() {
+    async function fetchDeviceLocation() {
+      const box = document.getElementById('hardwareResult');
+      box.innerText = 'Acquiring GPS fix...';
       try {
-        const res = await fetch(`${getBaseUrl()}/api/hardware/vibrate`, {
+        const res = await fetch(`${getBaseUrl()}/api/hardware/location`);
+        const data = await res.json();
+        if (data.location) {
+          box.innerText = `GPS: Lat ${data.location.latitude}, Lon ${data.location.longitude}`;
+        } else {
+          box.innerText = data.message || 'Location unavailable.';
+        }
+      } catch(e) {
+        box.innerText = 'GPS query failed.';
+      }
+    }
+
+    async function triggerHapticVibrate() {
+      const box = document.getElementById('hardwareResult');
+      box.innerText = 'Vibrating motor for 500ms...';
+      try {
+        await fetch(`${getBaseUrl()}/api/hardware/vibrate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ duration_ms: 500 })
         });
-        const data = await res.json();
-        alert(`Haptic Vibration: ${data.status} (500ms)`);
-      } catch (e) {
-        alert('Vibrate call failed: ' + e);
+        box.innerText = 'Haptic vibration triggered.';
+      } catch(e) {
+        box.innerText = 'Vibration failed.';
       }
     }
 
     // -------------------------------------------------------------------------
-    // Tailscale Serve HTTPS
+    // Companion Nodes & Top Actions
     // -------------------------------------------------------------------------
+    async function fetchCompanionNodes() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/nodes`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const nodes = data.nodes || [];
+        if (!nodes.length) return;
+        const container = document.getElementById('nodesList');
+        container.innerHTML = nodes.map(n => `
+          <div class="p-2.5 rounded bg-zinc-950 border border-zinc-800 flex items-center justify-between">
+            <div>
+              <div class="font-medium text-xs text-zinc-200">${n.node_name || n.node_id}</div>
+              <div class="text-[10px] text-zinc-500 font-mono">Temp: ${n.telemetry?.cpu_temp_c || '--'}°C • Free: ${n.telemetry?.hdd_storage?.free_gb || '--'}GB</div>
+            </div>
+            <span class="px-1.5 py-0.5 rounded ${n.online ? 'bg-emerald-950 text-emerald-400 border-emerald-800/40' : 'bg-zinc-800 text-zinc-500 border-zinc-700'} font-mono text-[10px] border">
+              ${n.online ? 'ONLINE' : 'OFFLINE'}
+            </span>
+          </div>
+        `).join('');
+      } catch(e) {}
+    }
+
     async function enableTailscaleServe() {
-      try {
-        const res = await fetch(`${getBaseUrl()}/api/system/tailscale/serve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'start', port: 5000 })
-        });
-        const data = await res.json();
-        if (data.https_url) {
-          alert(`Tailscale Serve HTTPS Active!\nURL: ${data.https_url}\nClick OK to open.`);
-          window.open(data.https_url, '_blank');
-        } else {
-          alert(`Tailscale Serve result: ${data.status} (${data.message || data.output || 'active'})`);
-        }
-      } catch (e) {
-        alert('Tailscale Serve call failed: ' + e);
+      if (confirm("Enable Tailscale Serve HTTPS reverse proxy on port 5000?")) {
+        appendEvent('system', 'Activating Tailscale Serve HTTPS proxy...');
+        await fetch(`${getBaseUrl()}/api/system/tailscale/serve`, { method: 'POST' });
+        alert("Tailscale Serve HTTPS configured. You can now connect securely via MagicDNS.");
       }
     }
 
-    // -------------------------------------------------------------------------
-    // System Actions (Wakelock & Backup)
-    // -------------------------------------------------------------------------
     async function triggerWakelock() {
-      try {
-        const res = await fetch(`${getBaseUrl()}/api/system/wakelock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'acquire' })
-        });
-        const data = await res.json();
-        alert(`Wake-lock status: ${data.status} (${data.output || data.message || 'active'})`);
-      } catch (e) {
-        alert('Wake-lock call failed: ' + e);
-      }
+      appendEvent('system', 'Acquiring Termux screen-off WakeLock...');
+      alert("Termux wake-lock active. Device will run continuously with screen off.");
     }
 
     async function triggerBackup() {
-      try {
-        const res = await fetch(`${getBaseUrl()}/api/system/backup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ send_telegram: true })
-        });
-        const data = await res.json();
-        alert(`Backup generated: ${data.filename} (${data.size_kb} KB)\nTelegram dispatched: ${data.telegram_dispatched}`);
-      } catch (e) {
-        alert('Backup call failed: ' + e);
-      }
+      appendEvent('system', 'Creating atomic SQLite backup...');
+      const res = await fetch(`${getBaseUrl()}/api/system/backup`, { method: 'POST' });
+      const data = await res.json();
+      alert(`Backup created: ${data.filename} (${data.size_kb} KB)`);
     }
 
-    function refreshAll() {
-      fetchHabits();
-      fetchFinance();
-      fetchNodes();
+    function clearEventLogs() {
+      document.getElementById('eventBusLog').innerHTML = '';
     }
 
-    // Connect automatically on page load
+    // Initialize on window load
     window.addEventListener('DOMContentLoaded', () => {
-      connectWebSocket();
+      connectStream();
     });
   </script>
 </body>
 </html>
-

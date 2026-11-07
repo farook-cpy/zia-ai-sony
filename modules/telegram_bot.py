@@ -45,10 +45,23 @@ class TelegramBotRunner:
                 ids.append(int(x))
         return ids
 
+    def _parse_allowed_usernames(self) -> List[str]:
+        raw = os.getenv("TELEGRAM_ALLOWED_USERNAMES", "Farookkkk")
+        return [u.strip().lstrip("@").lower() for u in raw.split(",") if u.strip()]
+
     def is_configured(self) -> bool:
         return bool(self.token and len(self.token) > 15)
 
-    def is_authorized(self, chat_id: int) -> bool:
+    def is_authorized(self, chat_id: int, username: Optional[str] = None) -> bool:
+        if username:
+            clean_u = username.lstrip("@").lower()
+            allowed_users = self._parse_allowed_usernames()
+            if clean_u in allowed_users:
+                if chat_id not in self.allowed_chats:
+                    self.allowed_chats.append(chat_id)
+                    logger.info("Authorized user @%s with primary Chat ID: %d", username, chat_id)
+                return True
+
         if not self.allowed_chats:
             # If no chat IDs specified, allow the first incoming chat and pin it
             self.allowed_chats.append(chat_id)
@@ -351,8 +364,9 @@ class TelegramBotRunner:
                         continue
 
                     chat_id = msg.get("chat", {}).get("id")
-                    if not chat_id or not self.is_authorized(chat_id):
-                        logger.warning("Ignored message from unauthorized Telegram chat: %s", chat_id)
+                    from_user = msg.get("from", {}).get("username")
+                    if not chat_id or not self.is_authorized(chat_id, username=from_user):
+                        logger.warning("Ignored message from unauthorized Telegram chat: %s (user: @%s)", chat_id, from_user)
                         continue
 
                     # Handle incoming voice note

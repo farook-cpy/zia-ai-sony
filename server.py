@@ -612,6 +612,21 @@ def handle_500(e):
 # WebSocket Real-Time Telemetry & Event Router
 # ------------------------------------------------------------------------------
 
+@app.route("/ws", methods=["GET"])
+def ws_http_fallback():
+    """
+    HTTP fallback for /ws. Returns telemetry stream info if accessed via regular HTTP GET
+    (prevents 502 Bad Gateway / 400 Bad Request behind reverse proxies like Tailscale Serve).
+    """
+    return jsonify({
+        "status": "websocket_endpoint",
+        "description": "Project Zia telemetry stream. Connect with ws:// or wss://.",
+        "active_clients": broadcaster.client_count(),
+        "events_stream_fallback": f"http://{request.host}/api/events",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z"
+    })
+
+
 @sock.route("/ws")
 def websocket_route(ws):
     """

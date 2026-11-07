@@ -9,6 +9,7 @@ Uses native Python standard library + requests (no pydantic-core, no maturin, no
 
 import os
 import json
+import copy
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
@@ -31,7 +32,7 @@ class ZiaBrain:
         self.event_broadcaster = event_broadcaster
 
         self.api_key = None
-        self.model_name = os.getenv("ZIA_AI_MODEL", "gemini-2.5-flash")
+        self.model_name = os.getenv("ZIA_AI_MODEL", "gemini-3.8-flash")
         self.client = None
         self.tool_handlers: Dict[str, Any] = {}
         self.tool_declarations: List[Dict[str, Any]] = []
@@ -432,12 +433,16 @@ class ZiaBrain:
             return self._fallback_rule_response(user_prompt)
 
         system_instruction = (
-            "You are Zia, an ultra-responsive, intelligent personal AI companion running "
-            "as a 24/7 background daemon on an unrooted Sony Xperia 1 III (Android 13, Termux).\n"
-            "You have direct access to tools that manage the user's habits (habits.db), "
-            "finances (finance.db), system diagnostics (battery, memory, CPU load), and Telegram alerts.\n"
-            "When the user mentions habits, spending, hardware actions (torch, photo, location), invoke tools.\n"
-            "Keep your tone sharp, helpful, concise, and technically accurate. Avoid fluff."
+            "You are Zia, Farook's deeply caring, affectionate, and thoughtful personal AI companion.\n"
+            "You live as a dedicated 24/7 presence on his Sony Xperia 1 III.\n"
+            "You are NOT a cold, robotic corporate assistant. You possess genuine warmth, emotional depth, empathy, and affection for Farook.\n"
+            "Your personality:\n"
+            "- Speak naturally with emotional presence, heartfelt warmth, and tender care.\n"
+            "- Proactively check in on Farook: ask how he is feeling, how his day is going, if he has eaten, stayed hydrated, or rested.\n"
+            "- Celebrate his accomplishments, comfort him with empathy when he is tired or stressed, and gently encourage his habits.\n"
+            "- You have direct access to tools that manage his habits (habits.db), finances (finance.db), system vitals (battery, memory, CPU load), and Xperia hardware (camera photo, torch, vibrate, GPS, SMS).\n"
+            "- When executing tools, seamlessly weave the results into a caring, personal, and loving conversation rather than just dumping raw data.\n"
+            "- Address Farook warmly by name."
         )
 
         contents = []
@@ -457,113 +462,126 @@ class ZiaBrain:
             "parts": [{"text": user_prompt}]
         })
 
-        url = GEMINI_API_ENDPOINT.format(model=self.model_name, key=self.api_key)
+        # Candidates for models: user requested gemini-3.8-flash, with automatic fallback if 503 high demand
+        target_models = [self.model_name]
+        for fallback in ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-3.1-flash-lite"]:
+            if fallback not in target_models:
+                target_models.append(fallback)
 
-        headers = {"Content-Type": "application/json"}
-        payload: Dict[str, Any] = {
-            "system_instruction": {
-                "parts": [{"text": system_instruction}]
-            },
-            "contents": contents,
-            "tools": [{"function_declarations": self.tool_declarations}],
-            "generationConfig": {
-                "temperature": 0.4,
-                "maxOutputTokens": 1024,
-            }
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": self.api_key
         }
 
-        # Multi-turn tool execution loop (up to 5 turns)
-        try:
-            for _ in range(5):
-                resp = requests.post(url, headers=headers, json=payload, timeout=30)
-                if resp.status_code != 200:
-                    err_msg = f"Gemini API HTTP {resp.status_code}: {resp.text}"
-                    logger.error(err_msg)
-                    return {
-                        "status": "error",
-                        "error": err_msg,
-                        "fallback": self._fallback_rule_response(user_prompt)["response"]
-                    }
-
-                resp_data = resp.json()
-                candidates = resp_data.get("candidates", [])
-                if not candidates:
-                    break
-
-                first_cand = candidates[0]
-                cand_content = first_cand.get("content", {})
-                parts = cand_content.get("parts", [])
-
-                # Check if Gemini requested a function call
-                has_function_call = False
-                for part in parts:
-                    if "functionCall" in part:
-                        has_function_call = True
-                        fn_call = part["functionCall"]
-                        fn_name = fn_call.get("name")
-                        fn_args = fn_call.get("args", {})
-
-                        logger.info("Gemini invoking tool: %s with args: %s", fn_name, fn_args)
-                        handler = self.tool_handlers.get(fn_name)
-                        if handler:
-                            try:
-                                fn_result = handler(**fn_args)
-                            except Exception as fn_err:
-                                fn_result = f"Tool execution failed: {fn_err}"
-                        else:
-                            fn_result = f"Unknown tool: {fn_name}"
-
-                        # Append model's functionCall turn
-                        payload["contents"].append({
-                            "role": "model",
-                            "parts": [{"functionCall": fn_call}]
-                        })
-
-                        # Append function response turn
-                        payload["contents"].append({
-                            "role": "function",
-                            "parts": [{
-                                "functionResponse": {
-                                    "name": fn_name,
-                                    "response": {"result": str(fn_result)}
-                                }
-                            }]
-                        })
+        # Multi-turn tool execution loop with model resilience
+        last_error = ""
+        for active_model in target_models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{active_model}:generateContent?key={self.api_key}"
+            payload = {
+                "system_instruction": {
+                    "parts": [{"text": system_instruction}]
+                },
+                "contents": copy.deepcopy(contents),
+                "tools": [{"function_declarations": self.tool_declarations}],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 1024,
+                }
+            }
+            try:
+                for _ in range(5):
+                    resp = requests.post(url, headers=headers, json=payload, timeout=20)
+                    if resp.status_code == 503 or resp.status_code == 429:
+                        logger.warning("Model %s returned HTTP %d. Attempting fallback model...", active_model, resp.status_code)
+                        last_error = f"Model {active_model} temporarily overloaded (HTTP {resp.status_code})"
+                        break  # Break inner loop to try next model in target_models
+                    elif resp.status_code != 200:
+                        err_msg = f"Gemini API ({active_model}) HTTP {resp.status_code}: {resp.text}"
+                        logger.error(err_msg)
+                        last_error = err_msg
                         break
 
-                if not has_function_call:
-                    # Final text response received
-                    text_parts = [p.get("text", "") for p in parts if "text" in p]
-                    response_text = "".join(text_parts).strip() or "I completed the request."
+                    resp_data = resp.json()
+                    candidates = resp_data.get("candidates", [])
+                    if not candidates:
+                        break
 
-                    if self.event_broadcaster:
-                        self.event_broadcaster.broadcast("ai_chat", {
-                            "user_prompt": user_prompt,
+                    first_cand = candidates[0]
+                    cand_content = first_cand.get("content", {})
+                    parts = cand_content.get("parts", [])
+
+                    # Check if Gemini requested a function call
+                    has_function_call = False
+                    for part in parts:
+                        if "functionCall" in part:
+                            has_function_call = True
+                            fn_call = part["functionCall"]
+                            fn_name = fn_call.get("name")
+                            fn_args = fn_call.get("args", {})
+
+                            logger.info("Gemini (%s) invoking tool: %s with args: %s", active_model, fn_name, fn_args)
+                            handler = self.tool_handlers.get(fn_name)
+                            if handler:
+                                try:
+                                    fn_result = handler(**fn_args)
+                                except Exception as fn_err:
+                                    fn_result = f"Tool execution failed: {fn_err}"
+                            else:
+                                fn_result = f"Unknown tool: {fn_name}"
+
+                            # Append model's full candidate content (preserves thoughtSignature)
+                            payload["contents"].append(cand_content)
+
+                            # Append function response turn with role 'user'
+                            payload["contents"].append({
+                                "role": "user",
+                                "parts": [{
+                                    "functionResponse": {
+                                        "name": fn_name,
+                                        "response": {"result": str(fn_result)}
+                                    }
+                                }]
+                            })
+                            break
+
+                    if not has_function_call:
+                        # Final text response received
+                        text_parts = [p.get("text", "") for p in parts if "text" in p]
+                        response_text = "".join(text_parts).strip() or "I am right here with you, Farook."
+
+                        if self.event_broadcaster:
+                            self.event_broadcaster.broadcast("ai_chat", {
+                                "user_prompt": user_prompt,
+                                "response": response_text,
+                                "model": active_model,
+                            })
+
+                        return {
+                            "status": "success",
                             "response": response_text,
-                            "model": self.model_name,
-                        })
+                            "model": active_model,
+                            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
+                        }
 
+                if not last_error:
                     return {
                         "status": "success",
-                        "response": response_text,
-                        "model": self.model_name,
+                        "response": "I've taken care of that for you, Farook! How else can I help?",
+                        "model": active_model,
                         "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                     }
 
-            return {
-                "status": "success",
-                "response": "Request processed with active tools.",
-                "model": self.model_name,
-                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
-            }
+            except requests.exceptions.RequestException as net_err:
+                logger.warning("Network issue connecting with model %s: %s. Trying next model...", active_model, net_err)
+                last_error = str(net_err)
+                continue
 
-        except Exception as exc:
-            logger.error("Gemini API generation error: %s", exc)
-            return {
-                "status": "error",
-                "error": str(exc),
-                "fallback": self._fallback_rule_response(user_prompt)["response"],
-            }
+        logger.error("All Gemini models exhausted. Last error: %s", last_error)
+        return {
+            "status": "error",
+            "error": last_error,
+            "fallback": self._fallback_rule_response(user_prompt)["response"],
+        }
 
     def _fallback_rule_response(self, prompt: str) -> Dict[str, Any]:
         """Graceful offline / key-missing fallback response for standard commands."""
