@@ -9,7 +9,9 @@ import shutil
 import asyncio
 import logging
 import subprocess
-from datetime import datetime
+import base64
+import requests
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger("project-zia.voice")
@@ -61,7 +63,7 @@ class VoicePipeline:
 
         voice = voice or DEFAULT_VOICE
         if not output_filename:
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
             output_filename = f"tts_{timestamp}.mp3"
 
         out_path = os.path.join(AUDIO_CACHE_DIR, output_filename)
@@ -113,35 +115,48 @@ class VoicePipeline:
     def transcribe_audio(self, audio_bytes: bytes, mime_type: str = "audio/mp3",
                          execute_with_brain: bool = False) -> Dict[str, Any]:
         """
-        Transcribe spoken audio using Gemini Multimodal understanding.
-        Bypasses heavy local C++ compilation (vosk/whisper) on aarch64.
+        Transcribe spoken audio using Gemini Multimodal understanding via REST API.
+        Bypasses heavy local C++ compilation (vosk/whisper) and Rust (pydantic-core) on aarch64.
         """
-        if not self.ai_brain or not self.ai_brain.client:
+        if not self.ai_brain or not self.ai_brain.client or not self.ai_brain.api_key:
             return {
                 "status": "error",
                 "message": "Gemini API client not initialized. Configure GEMINI_API_KEY in .env.",
             }
 
         try:
-            from google.genai import types
+            b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.ai_brain.model_name}:generateContent?key={self.ai_brain.api_key}"
+            payload = {
+                "contents": [{
+                    "parts": [
+                        {
+                            "inline_data": {
+                                "mime_type": mime_type,
+                                "data": b64_audio
+                            }
+                        },
+                        {
+                            "text": "Please transcribe the spoken words in this audio recording accurately. Return only the transcribed text without extra preamble or commentary."
+                        }
+                    ]
+                }]
+            }
 
-            part = types.Part.from_bytes(data=audio_bytes, mime_type=mime_type)
-            prompt = (
-                "Please transcribe the spoken words in this audio recording accurately. "
-                "Return only the transcribed text without extra preamble or commentary."
-            )
+            resp = requests.post(url, json=payload, timeout=45)
+            if resp.status_code != 200:
+                raise RuntimeError(f"Gemini API returned HTTP {resp.status_code}: {resp.text}")
 
-            response = self.ai_brain.client.models.generate_content(
-                model=self.ai_brain.model_name,
-                contents=[part, prompt],
-            )
-            transcription = (response.text or "").strip()
+            cand = resp.json().get("candidates", [])[0]
+            parts = cand.get("content", {}).get("parts", [])
+            transcription = "".join([p.get("text", "") for p in parts]).strip()
+
             logger.info("Transcribed audio: '%s'", transcription)
 
             result: Dict[str, Any] = {
                 "status": "success",
                 "transcription": transcription,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
 
             if execute_with_brain and transcription:
