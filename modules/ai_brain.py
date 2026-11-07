@@ -30,7 +30,7 @@ class ZiaBrain:
         self.telegram_sender = telegram_sender
         self.event_broadcaster = event_broadcaster
 
-        self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        self.api_key = None
         self.model_name = os.getenv("ZIA_AI_MODEL", "gemini-2.5-flash")
         self.client = None
         self.tool_handlers: Dict[str, Any] = {}
@@ -39,16 +39,56 @@ class ZiaBrain:
         self._init_tools()
         self._init_client()
 
+    def _reload_env(self):
+        """Dynamically reload .env from disk so changes apply immediately without daemon restarts."""
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+        if os.path.isfile(env_path):
+            try:
+                from dotenv import load_dotenv
+                load_dotenv(dotenv_path=env_path, override=True)
+            except Exception:
+                pass
+
+            # Direct fallback parser to handle quotes, inline comments, or spaces
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        if "=" in line:
+                            k, v = line.split("=", 1)
+                            k = k.strip()
+                            v = v.strip()
+                            if " #" in v:
+                                v = v.split(" #", 1)[0].strip()
+                            if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+                                v = v[1:-1].strip()
+                            if k and v:
+                                os.environ[k] = v
+            except Exception as e:
+                logger.warning("Direct .env read warning: %s", e)
+
     def _init_client(self):
         """Validate API key and initialize client status."""
-        self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        if not self.api_key:
-            logger.info("GEMINI_API_KEY not configured. AI brain is in standby mode.")
+        self._reload_env()
+        raw_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if raw_key:
+            raw_key = raw_key.strip().strip("'\"")
+            if " #" in raw_key:
+                raw_key = raw_key.split(" #", 1)[0].strip()
+
+        # Check for placeholder or empty key
+        if not raw_key or raw_key.startswith("AIzaSyYour") or "your-" in raw_key.lower():
+            logger.info("GEMINI_API_KEY not configured or is a placeholder. AI brain is in standby mode.")
             self.client = None
+            self.api_key = None
             return
 
+        self.api_key = raw_key
+        self.model_name = os.getenv("ZIA_AI_MODEL", "gemini-2.5-flash")
         self.client = True
-        logger.info("Gemini AI REST Engine ready with model: %s", self.model_name)
+        logger.info("Gemini AI REST Engine ready with model: %s (API key length: %d)", self.model_name, len(self.api_key))
 
     def _init_tools(self):
         """Define Python function tools and their JSON schemas for Gemini function calling."""

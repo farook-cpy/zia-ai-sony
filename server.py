@@ -29,13 +29,6 @@ from datetime import datetime, date
 from contextlib import contextmanager
 from typing import Dict, Any, Optional, List
 
-# Load environment variables from .env
-from dotenv import load_dotenv
-load_dotenv()
-
-from flask import Flask, jsonify, request, send_file
-from flask_sock import Sock
-
 # ==============================================================================
 # Configuration & Constants
 # ==============================================================================
@@ -46,6 +39,17 @@ HABITS_DB_PATH = os.path.join(DATA_DIR, "habits.db")
 FINANCE_DB_PATH = os.path.join(DATA_DIR, "finance.db")
 PID_FILE_PATH = os.path.join(DATA_DIR, "server.pid")
 LOG_FILE_PATH = os.path.join(DATA_DIR, "zia.log")
+ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
+
+# Load environment variables from .env
+from dotenv import load_dotenv
+if os.path.exists(ENV_FILE_PATH):
+    load_dotenv(dotenv_path=ENV_FILE_PATH, override=True)
+else:
+    load_dotenv()
+
+from flask import Flask, jsonify, request, send_file
+from flask_sock import Sock
 
 DEFAULT_HOST = os.getenv("ZIA_HOST", "0.0.0.0")
 DEFAULT_PORT = int(os.getenv("ZIA_PORT", "5000"))
@@ -656,6 +660,8 @@ def index():
     """Returns basic service status, metadata, and uptime."""
     uptime_sec = time.time() - START_TIME
     net_info = NetworkDiscovery.get_network_summary(port=DEFAULT_PORT)
+    if not ai_brain.client:
+        ai_brain._init_client()
     return jsonify({
         "app": "Project Zia",
         "description": "Headless Android Backend Daemon & AI Companion",
@@ -724,6 +730,8 @@ def serve_dashboard():
 @app.route("/status", methods=["GET"])
 def status():
     """Returns system health, resource usage, and database connectivity flags."""
+    if not ai_brain.client:
+        ai_brain._init_client()
     db_status = check_db_connectivity()
     telemetry = get_system_telemetry()
 
