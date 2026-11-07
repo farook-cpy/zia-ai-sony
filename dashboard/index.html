@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Zia — Xperia 1 III Node Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            },
+            dark: {
+              bg: '#0a0d12',
+              card: '#121721',
+              border: '#1e2638',
+              hover: '#1b2333',
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom brutalist scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0d12; }
+    ::-webkit-scrollbar-thumb { background: #1e2638; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #34d399; }
+  </style>
+</head>
+<body class="bg-dark-bg text-gray-200 font-mono text-xs antialiased min-h-screen flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-dark-border bg-dark-card/90 backdrop-blur sticky top-0 z-50 px-4 py-2.5">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Node Identity -->
+      <div class="flex items-center space-x-3">
+        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50"></div>
+        <div>
+          <span class="font-bold tracking-wider text-sm text-white">PROJECT ZIA</span>
+          <span class="text-gray-500 text-[10px] ml-1.5 px-1.5 py-0.5 rounded border border-dark-border bg-dark-bg">SONY XPERIA 1 III • AARCH64</span>
+        </div>
+      </div>
+
+      <!-- Host & Connection Settings -->
+      <div class="flex items-center space-x-2">
+        <div class="flex items-center border border-dark-border rounded bg-dark-bg px-2 py-1 text-gray-300">
+          <span class="text-gray-500 text-[10px] mr-1.5">NODE:</span>
+          <input id="hostInput" type="text" class="bg-transparent text-emerald-400 focus:outline-none w-36 text-xs" placeholder="127.0.0.1:5000">
+        </div>
+        <button id="connectBtn" onclick="toggleConnection()" class="px-2.5 py-1 rounded bg-dark-hover border border-dark-border hover:border-emerald-500 text-gray-200 transition font-medium">
+          Connect
+        </button>
+        <div id="connBadge" class="flex items-center px-2 py-1 rounded border border-yellow-500/30 bg-yellow-500/10 text-yellow-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 mr-1.5"></span>
+          <span id="connText">CONNECTING</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="flex items-center space-x-2">
+        <button id="httpsBtn" onclick="enableTailscaleServe()" title="Enable Tailscale Serve HTTPS Reverse Proxy" class="px-2 py-1 border border-dark-border rounded hover:bg-dark-hover text-emerald-400 flex items-center gap-1 transition">
+          <span>🔒 HTTPS</span>
+        </button>
+        <button onclick="triggerWakelock()" title="Acquire / Refresh Termux Wake-lock" class="px-2 py-1 border border-dark-border rounded hover:bg-dark-hover text-gray-300 flex items-center gap-1 transition">
+          <span>⚡ WakeLock</span>
+        </button>
+        <button onclick="triggerBackup()" title="Trigger SQLite Backup" class="px-2 py-1 border border-dark-border rounded hover:bg-dark-hover text-gray-300 flex items-center gap-1 transition">
+          <span>💾 Backup</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Grid -->
+  <main class="max-w-7xl mx-auto w-full p-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- Left Column (Vitals & Habits) -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- Hardware Vitals Panel -->
+      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 shadow-sm">
+        <div class="flex items-center justify-between pb-2 mb-3 border-b border-dark-border">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+            <span>📊</span> Hardware Vitals
+          </h2>
+          <span id="uptimeBadge" class="text-[10px] text-gray-500">Uptime: --</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 mb-3">
+          <!-- Battery Gauge -->
+          <div class="border border-dark-border bg-dark-bg p-2.5 rounded">
+            <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
+              <span>BATTERY</span>
+              <span id="batteryStatusBadge" class="text-emerald-400">--</span>
+            </div>
+            <div class="text-lg font-bold text-white mb-1.5" id="batteryPercentText">--%</div>
+            <div class="w-full bg-dark-border h-1.5 rounded-full overflow-hidden">
+              <div id="batteryBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Memory Gauge -->
+          <div class="border border-dark-border bg-dark-bg p-2.5 rounded">
+            <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
+              <span>RAM AVAILABLE</span>
+              <span id="ramTotalText" class="text-gray-500">/ --MB</span>
+            </div>
+            <div class="text-lg font-bold text-white mb-1.5" id="ramAvailText">-- MB</div>
+            <div class="w-full bg-dark-border h-1.5 rounded-full overflow-hidden">
+              <div id="ramBar" class="bg-cyan-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Load & Storage Sub-grid -->
+        <div class="border border-dark-border bg-dark-bg p-2 rounded flex justify-between items-center text-[11px] mb-3">
+          <div>
+            <span class="text-gray-500">LOAD (1m, 5m, 15m):</span>
+            <span id="loadAvgText" class="text-gray-200 ml-1">--</span>
+          </div>
+          <div>
+            <span class="text-gray-500">STORAGE:</span>
+            <span id="storageText" class="text-gray-200 ml-1">-- GB Free</span>
+          </div>
+        </div>
+
+        <!-- Xperia Hardware Action Toolbar -->
+        <div class="pt-2.5 border-t border-dark-border flex items-center justify-between gap-1.5">
+          <button onclick="toggleTorch()" class="flex-1 py-1 px-2 border border-dark-border hover:border-yellow-500 rounded bg-dark-bg text-gray-300 hover:text-yellow-400 transition text-[10px] flex items-center justify-center gap-1">
+            <span>🔦 Torch</span>
+          </button>
+          <button onclick="triggerPhoto()" class="flex-1 py-1 px-2 border border-dark-border hover:border-cyan-500 rounded bg-dark-bg text-gray-300 hover:text-cyan-400 transition text-[10px] flex items-center justify-center gap-1">
+            <span>📸 Snap</span>
+          </button>
+          <button onclick="triggerVibrate()" class="flex-1 py-1 px-2 border border-dark-border hover:border-purple-500 rounded bg-dark-bg text-gray-300 hover:text-purple-400 transition text-[10px] flex items-center justify-center gap-1">
+            <span>📳 Buzz</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Companion Nodes Panel (Linux Mint / Legacy Laptop) -->
+      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 shadow-sm">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-dark-border">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+            <span>💻</span> Companion Nodes
+          </h2>
+          <span id="nodesCountBadge" class="text-[10px] text-gray-500">0 connected</span>
+        </div>
+        <div id="companionNodesContainer" class="space-y-2">
+          <div class="border border-dark-border bg-dark-bg p-2 rounded text-[11px] text-gray-500 text-center">
+            No companion nodes reporting. Run <code class="text-emerald-400">./companion_node.py</code> on your Linux Mint laptop.
+          </div>
+        </div>
+      </section>
+
+      <!-- Habit Tracker Panel -->
+      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 flex-1 flex flex-col shadow-sm">
+        <div class="flex items-center justify-between pb-2 mb-3 border-b border-dark-border">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+            <span>✅</span> Habit Tracker
+          </h2>
+          <span id="habitsSummaryText" class="text-[10px] text-emerald-400 font-semibold">0 completed today</span>
+        </div>
+
+        <!-- Habits List -->
+        <div id="habitsContainer" class="flex-1 overflow-y-auto max-h-56 space-y-2 pr-1">
+          <div class="text-gray-500 text-center py-4">Loading habits...</div>
+        </div>
+
+        <!-- Add Habit Inline Form -->
+        <form onsubmit="addHabit(event)" class="mt-3 pt-3 border-t border-dark-border flex gap-2">
+          <input id="newHabitName" type="text" placeholder="New habit name..." required
+            class="flex-1 bg-dark-bg border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500">
+          <input id="newHabitTarget" type="number" value="1" min="1" max="100" title="Target count"
+            class="w-12 bg-dark-bg border border-dark-border rounded px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-emerald-500">
+          <button type="submit" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition">
+            +
+          </button>
+        </form>
+      </section>
+
+    </div>
+
+    <!-- Middle Column (Finance & Live Telemetry) -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- Finance Overview Panel -->
+      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 shadow-sm">
+        <div class="flex items-center justify-between pb-2 mb-3 border-b border-dark-border">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+            <span>💰</span> Finance Overview
+          </h2>
+          <span id="totalTxCountText" class="text-[10px] text-gray-500">0 records</span>
+        </div>
+
+        <!-- Metric Badges -->
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="border border-dark-border bg-dark-bg p-2 rounded text-center">
+            <div class="text-[9px] text-gray-500 uppercase">Income</div>
+            <div id="finIncomeText" class="text-xs font-bold text-emerald-400 mt-0.5">$0.00</div>
+          </div>
+          <div class="border border-dark-border bg-dark-bg p-2 rounded text-center">
+            <div class="text-[9px] text-gray-500 uppercase">Expense</div>
+            <div id="finExpenseText" class="text-xs font-bold text-rose-400 mt-0.5">$0.00</div>
+          </div>
+          <div class="border border-dark-border bg-dark-bg p-2 rounded text-center">
+            <div class="text-[9px] text-gray-500 uppercase">Net Balance</div>
+            <div id="finBalanceText" class="text-xs font-bold text-cyan-400 mt-0.5">$0.00</div>
+          </div>
+        </div>
+
+        <!-- Quick Transaction Form -->
+        <form onsubmit="addTransaction(event)" class="border border-dark-border bg-dark-bg p-2.5 rounded space-y-2">
+          <div class="flex gap-2">
+            <select id="txType" class="bg-dark-card border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none">
+              <option value="expense">Expense (-)</option>
+              <option value="income">Income (+)</option>
+            </select>
+            <input id="txAmount" type="number" step="0.01" min="0.01" placeholder="Amount ($)" required
+              class="w-24 bg-dark-card border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <input id="txCategory" type="text" placeholder="Category" required
+              class="flex-1 bg-dark-card border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500">
+          </div>
+          <div class="flex gap-2">
+            <input id="txDesc" type="text" placeholder="Description / Note..."
+              class="flex-1 bg-dark-card border border-dark-border rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition">
+              Log
+            </button>
+          </div>
+        </form>
+
+        <!-- Recent Transactions -->
+        <div class="mt-3">
+          <div class="text-[10px] text-gray-500 mb-1">RECENT TRANSACTIONS</div>
+          <div id="transactionsContainer" class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+            <div class="text-gray-500 text-center py-2 text-[11px]">No transactions logged.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Event Ticker (WebSocket Stream) -->
+      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 flex-1 flex flex-col shadow-sm">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-dark-border">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+            <span>⚡</span> Real-time Event Stream
+          </h2>
+          <span class="text-[9px] text-emerald-400 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> LIVE
+          </span>
+        </div>
+        <div id="eventStreamBox" class="flex-1 bg-dark-bg border border-dark-border rounded p-2 overflow-y-auto max-h-48 font-mono text-[10px] space-y-1">
+          <div class="text-gray-500 italic">Listening for WebSocket event broadcasts...</div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Right Column (AI Companion Brain) -->
+    <div class="lg:col-span-4 flex flex-col">
+      <section class="border border-dark-border bg-dark-card rounded-lg p-3.5 flex-1 flex flex-col shadow-sm">
+        <div class="flex items-center justify-between pb-2 mb-3 border-b border-dark-border">
+          <div class="flex items-center space-x-2">
+            <span class="text-base">🤖</span>
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-white">Zia AI Companion</h2>
+              <span id="aiModelBadge" class="text-[9px] text-emerald-400">Gemini 2.5 Flash</span>
+            </div>
+          </div>
+          <button onclick="clearChat()" class="text-[10px] text-gray-500 hover:text-gray-300">Clear</button>
+        </div>
+
+        <!-- Chat Stream Box -->
+        <div id="chatMessages" class="flex-1 bg-dark-bg border border-dark-border rounded p-3 overflow-y-auto max-h-[460px] space-y-3 mb-3">
+          <!-- Initial Zia greeting -->
+          <div class="flex items-start space-x-2">
+            <div class="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">Z</div>
+            <div class="bg-dark-card border border-dark-border p-2.5 rounded-lg max-w-[85%] text-gray-200 text-xs">
+              Hello! I'm Zia, running on your Sony Xperia 1 III. I can track your habits, record expenses, monitor system vitals, or speak responses out loud. How can I help you today?
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Action Prompt Pills -->
+        <div class="flex flex-wrap gap-1.5 mb-2.5">
+          <button onclick="quickPrompt('What is the system status?')" class="text-[10px] bg-dark-bg border border-dark-border hover:border-emerald-500 text-gray-300 px-2 py-0.5 rounded transition">
+            📊 System Health
+          </button>
+          <button onclick="quickPrompt('Did I complete any habits today?')" class="text-[10px] bg-dark-bg border border-dark-border hover:border-emerald-500 text-gray-300 px-2 py-0.5 rounded transition">
+            📋 Today's Habits
+          </button>
+          <button onclick="quickPrompt('Give me a financial summary.')" class="text-[10px] bg-dark-bg border border-dark-border hover:border-emerald-500 text-gray-300 px-2 py-0.5 rounded transition">
+            💰 Spending Summary
+          </button>
+        </div>
+
+        <!-- Chat Input Form -->
+        <form onsubmit="sendChat(event)" class="flex gap-2">
+          <input id="chatInput" type="text" placeholder="Ask Zia or speak a command..." required
+            class="flex-1 bg-dark-bg border border-dark-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+          <button type="submit" id="chatSendBtn" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition flex items-center gap-1">
+            <span>Send</span>
+          </button>
+        </form>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Audio Player Element (Hidden) -->
+  <audio id="ttsAudioPlayer" class="hidden"></audio>
+
+  <!-- Client Application Logic -->
+  <script>
+    // Configuration & State
+    let ws = null;
+    let baseHost = window.location.host || '127.0.0.1:5000';
+    let isConnected = false;
+    let habitsList = [];
+
+    // Initialize Host Input
+    document.getElementById('hostInput').value = baseHost;
+
+    function getBaseUrl() {
+      const h = document.getElementById('hostInput').value.trim() || baseHost;
+      return window.location.protocol.startsWith('https') ? `https://${h}` : `http://${h}`;
+    }
+
+    function getWsUrl() {
+      const h = document.getElementById('hostInput').value.trim() || baseHost;
+      const proto = window.location.protocol.startsWith('https') ? 'wss:' : 'ws:';
+      return `${proto}//${h}/ws`;
+    }
+
+    // -------------------------------------------------------------------------
+    // WebSocket Lifecycle
+    // -------------------------------------------------------------------------
+    function connectWebSocket() {
+      const wsUrl = getWsUrl();
+      updateConnBadge('CONNECTING', 'yellow');
+
+      try {
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          isConnected = true;
+          updateConnBadge('ONLINE', 'emerald');
+          appendEvent('system', 'WebSocket connection established with ' + wsUrl);
+          // Initial REST sync
+          refreshAll();
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleIncomingEvent(data);
+          } catch (e) {
+            appendEvent('raw', event.data);
+          }
+        };
+
+        ws.onclose = () => {
+          isConnected = false;
+          updateConnBadge('OFFLINE', 'rose');
+          appendEvent('system', 'WebSocket connection closed.');
+          setTimeout(connectWebSocket, 4000); // Auto-reconnect
+        };
+
+        ws.onerror = (err) => {
+          isConnected = false;
+          updateConnBadge('ERROR', 'rose');
+        };
+      } catch (e) {
+        updateConnBadge('FAILED', 'rose');
+      }
+    }
+
+    function toggleConnection() {
+      if (ws) {
+        ws.close();
+      }
+      connectWebSocket();
+    }
+
+    function updateConnBadge(text, color) {
+      const badge = document.getElementById('connBadge');
+      const textElem = document.getElementById('connText');
+      textElem.textContent = text;
+
+      badge.className = `flex items-center px-2 py-1 rounded border border-${color}-500/30 bg-${color}-500/10 text-${color}-400`;
+      badge.querySelector('span').className = `w-1.5 h-1.5 rounded-full bg-${color}-400 mr-1.5`;
+    }
+
+    // -------------------------------------------------------------------------
+    // Incoming Event Handler
+    // -------------------------------------------------------------------------
+    function handleIncomingEvent(payload) {
+      const evt = payload.event;
+      const data = payload.data || {};
+      const time = payload.timestamp ? payload.timestamp.split('T')[1].slice(0, 8) : '';
+
+      appendEvent(evt, JSON.stringify(data));
+
+      if (evt === 'telemetry_tick') {
+        updateTelemetryUI(data);
+      } else if (evt === 'habit_logged' || evt === 'habit_created' || evt === 'habit_deleted') {
+        fetchHabits();
+      } else if (evt === 'finance_transaction' || evt === 'finance_transaction_deleted') {
+        fetchFinance();
+      } else if (evt === 'companion_node_heartbeat') {
+        fetchNodes();
+      }
+    }
+
+    function appendEvent(type, text) {
+      const box = document.getElementById('eventStreamBox');
+      const time = new Date().toLocaleTimeString();
+      const row = document.createElement('div');
+      row.className = 'flex items-start space-x-1.5 py-0.5 border-b border-dark-border/40';
+      row.innerHTML = `<span class="text-gray-500">[${time}]</span> <span class="text-emerald-400 font-semibold uppercase">${type}:</span> <span class="text-gray-300 truncate">${text}</span>`;
+      box.appendChild(row);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // -------------------------------------------------------------------------
+    // Telemetry UI Updates
+    // -------------------------------------------------------------------------
+    function updateTelemetryUI(data) {
+      if (!data) return;
+
+      // Battery
+      const bat = data.battery || {};
+      const pct = bat.percentage !== undefined ? bat.percentage : '--';
+      document.getElementById('batteryPercentText').textContent = pct !== '--' ? `${pct}%` : '--';
+      document.getElementById('batteryStatusBadge').textContent = bat.status || 'unknown';
+      if (pct !== '--') {
+        const bar = document.getElementById('batteryBar');
+        bar.style.width = `${pct}%`;
+        bar.className = pct < 20 ? 'bg-rose-500 h-full' : (pct < 50 ? 'bg-yellow-500 h-full' : 'bg-emerald-500 h-full');
+      }
+
+      // Memory
+      const mem = data.memory || {};
+      const avail = mem.MemAvailable || '--';
+      const total = mem.MemTotal || '--';
+      document.getElementById('ramAvailText').textContent = `${avail} MB`;
+      document.getElementById('ramTotalText').textContent = `/ ${total} MB`;
+      if (avail !== '--' && total !== '--') {
+        const pctUsed = Math.round(((total - avail) / total) * 100);
+        document.getElementById('ramBar').style.width = `${pctUsed}%`;
+      }
+
+      // Load & Storage
+      const loads = data.load_average || [];
+      document.getElementById('loadAvgText').textContent = loads.map(l => l.toFixed(2)).join(', ') || 'N/A';
+
+      const storage = data.storage || {};
+      document.getElementById('storageText').textContent = `${storage.free_gb || '--'} GB Free (${storage.free_percent || '--'}%)`;
+
+      // Uptime
+      const sec = data.uptime_seconds || 0;
+      const mins = Math.floor(sec / 60);
+      const hrs = Math.floor(mins / 60);
+      document.getElementById('uptimeBadge').textContent = `Uptime: ${hrs}h ${mins % 60}m`;
+    }
+
+    // -------------------------------------------------------------------------
+    // Habits REST Integration
+    // -------------------------------------------------------------------------
+    async function fetchHabits() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/habits`);
+        const json = await res.json();
+        habitsList = json.habits || [];
+        renderHabits();
+
+        const summaryRes = await fetch(`${getBaseUrl()}/api/habits/summary`);
+        const summary = await summaryRes.json();
+        document.getElementById('habitsSummaryText').textContent = `${summary.habits_logged_today || 0} / ${summary.active_habits_count || 0} completed today`;
+      } catch (e) {
+        console.error('Failed to fetch habits:', e);
+      }
+    }
+
+    function renderHabits() {
+      const container = document.getElementById('habitsContainer');
+      if (!habitsList.length) {
+        container.innerHTML = '<div class="text-gray-500 text-center py-4">No habits configured yet.</div>';
+        return;
+      }
+
+      container.innerHTML = habitsList.map(h => {
+        const isTargetMet = (h.completed_today || 0) >= (h.target_count || 1);
+        return `
+          <div class="flex items-center justify-between p-2 rounded border border-dark-border bg-dark-bg hover:border-dark-hover transition">
+            <div class="flex-1 truncate mr-2">
+              <div class="font-bold text-white text-xs truncate ${isTargetMet ? 'line-through text-gray-400' : ''}">
+                ${h.name}
+              </div>
+              <div class="text-[10px] text-gray-500">
+                ${h.category} • Target: ${h.target_count} ${h.unit}
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-[11px] font-bold ${isTargetMet ? 'text-emerald-400' : 'text-gray-400'}">
+                ${h.completed_today || 0}/${h.target_count}
+              </span>
+              <button onclick="logHabit(${h.id})" class="px-2 py-0.5 rounded bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[10px] font-bold transition">
+                +1
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function logHabit(habitId) {
+      try {
+        await fetch(`${getBaseUrl()}/api/habits/${habitId}/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: 1 })
+        });
+        fetchHabits();
+      } catch (e) {
+        alert('Failed to log habit: ' + e);
+      }
+    }
+
+    async function addHabit(e) {
+      e.preventDefault();
+      const name = document.getElementById('newHabitName').value.trim();
+      const target = parseInt(document.getElementById('newHabitTarget').value) || 1;
+      if (!name) return;
+
+      try {
+        await fetch(`${getBaseUrl()}/api/habits`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, target_count: target, category: 'daily' })
+        });
+        document.getElementById('newHabitName').value = '';
+        fetchHabits();
+      } catch (err) {
+        alert('Failed to create habit: ' + err);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // Finance REST Integration
+    // -------------------------------------------------------------------------
+    async function fetchFinance() {
+      try {
+        const [sumRes, txRes] = await Promise.all([
+          fetch(`${getBaseUrl()}/api/finance/summary`),
+          fetch(`${getBaseUrl()}/api/finance/transactions?limit=6`)
+        ]);
+        const summary = await sumRes.json();
+        const txData = await txRes.json();
+
+        document.getElementById('finIncomeText').textContent = `$${(summary.total_income || 0).toFixed(2)}`;
+        document.getElementById('finExpenseText').textContent = `$${(summary.total_expense || 0).toFixed(2)}`;
+        document.getElementById('finBalanceText').textContent = `$${(summary.net_balance || 0).toFixed(2)}`;
+        document.getElementById('totalTxCountText').textContent = `${summary.total_transactions || 0} records`;
+
+        renderTransactions(txData.transactions || []);
+      } catch (e) {
+        console.error('Failed to fetch finance:', e);
+      }
+    }
+
+    function renderTransactions(txs) {
+      const container = document.getElementById('transactionsContainer');
+      if (!txs.length) {
+        container.innerHTML = '<div class="text-gray-500 text-center py-2 text-[11px]">No transactions logged.</div>';
+        return;
+      }
+
+      container.innerHTML = txs.map(t => `
+        <div class="flex items-center justify-between p-1.5 rounded border border-dark-border bg-dark-card text-[11px]">
+          <div class="truncate mr-2">
+            <span class="font-bold text-white">${t.category}</span>
+            <span class="text-gray-500 text-[10px] ml-1">(${t.description || t.payment_method})</span>
+          </div>
+          <div class="font-bold ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">
+            ${t.type === 'income' ? '+' : '-'}$${Number(t.amount).toFixed(2)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function addTransaction(e) {
+      e.preventDefault();
+      const type = document.getElementById('txType').value;
+      const amount = parseFloat(document.getElementById('txAmount').value);
+      const category = document.getElementById('txCategory').value.trim();
+      const description = document.getElementById('txDesc').value.trim();
+
+      if (!category || isNaN(amount)) return;
+
+      try {
+        await fetch(`${getBaseUrl()}/api/finance/transactions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, amount, category, description })
+        });
+        document.getElementById('txAmount').value = '';
+        document.getElementById('txCategory').value = '';
+        document.getElementById('txDesc').value = '';
+        fetchFinance();
+      } catch (err) {
+        alert('Failed to add transaction: ' + err);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // AI Chat & Voice
+    // -------------------------------------------------------------------------
+    async function sendChat(e) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = '';
+      appendChatMessage('user', text);
+
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        const reply = data.response || data.fallback || 'No response.';
+        appendChatMessage('zia', reply);
+      } catch (err) {
+        appendChatMessage('zia', 'Error contacting Zia AI: ' + err);
+      }
+    }
+
+    function quickPrompt(text) {
+      document.getElementById('chatInput').value = text;
+      document.getElementById('chatSendBtn').click();
+    }
+
+    function appendChatMessage(sender, text) {
+      const box = document.getElementById('chatMessages');
+      const row = document.createElement('div');
+      row.className = sender === 'user' ? 'flex items-start justify-end space-x-2' : 'flex items-start space-x-2';
+
+      if (sender === 'user') {
+        row.innerHTML = `
+          <div class="bg-emerald-600 text-white p-2.5 rounded-lg max-w-[85%] text-xs shadow-sm">
+            ${escapeHtml(text)}
+          </div>
+          <div class="w-5 h-5 rounded bg-gray-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">U</div>
+        `;
+      } else {
+        const speechSafeText = encodeURIComponent(text.slice(0, 300));
+        row.innerHTML = `
+          <div class="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">Z</div>
+          <div class="bg-dark-card border border-dark-border p-2.5 rounded-lg max-w-[85%] text-gray-200 text-xs">
+            <div class="whitespace-pre-wrap">${escapeHtml(text)}</div>
+            <button onclick="playTTS(decodeURIComponent('${speechSafeText}'))" class="mt-2 text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+              <span>🔊 Listen</span>
+            </button>
+          </div>
+        `;
+      }
+
+      box.appendChild(row);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function playTTS(text) {
+      const player = document.getElementById('ttsAudioPlayer');
+      fetch(`${getBaseUrl()}/api/voice/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text })
+      })
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        player.src = url;
+        player.play();
+      })
+      .catch(e => console.error('TTS audio play error:', e));
+    }
+
+    function clearChat() {
+      document.getElementById('chatMessages').innerHTML = '';
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // -------------------------------------------------------------------------
+    // Companion Nodes REST Integration
+    // -------------------------------------------------------------------------
+    async function fetchNodes() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/nodes`);
+        const data = await res.json();
+        const nodes = data.nodes || [];
+        document.getElementById('nodesCountBadge').textContent = `${nodes.length} connected`;
+        renderNodes(nodes);
+      } catch (e) {
+        console.error('Failed to fetch companion nodes:', e);
+      }
+    }
+
+    function renderNodes(nodes) {
+      const container = document.getElementById('companionNodesContainer');
+      if (!nodes.length) {
+        container.innerHTML = `
+          <div class="border border-dark-border bg-dark-bg p-2 rounded text-[11px] text-gray-500 text-center">
+            No companion nodes reporting. Run <code class="text-emerald-400">./companion_node.py</code> on your Linux Mint laptop.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = nodes.map(n => {
+        const telem = n.telemetry || {};
+        const hdd = telem.hdd_storage || {};
+        const temp = telem.cpu_temp_c ? `${telem.cpu_temp_c}°C` : 'N/A';
+        const isOnline = n.online !== false;
+        return `
+          <div class="border border-dark-border bg-dark-bg p-2 rounded text-[11px]">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-bold text-white flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-rose-500'}"></span>
+                ${n.node_name || n.node_id}
+              </span>
+              <span class="text-[10px] text-gray-500">${n.platform?.system || 'Linux'} (${n.platform?.machine || 'x86_64'})</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 text-[10px] text-gray-400 mt-1.5 pt-1.5 border-t border-dark-border/50">
+              <div>TEMP: <span class="text-yellow-400 font-bold">${temp}</span></div>
+              <div>HDD FREE: <span class="text-cyan-400 font-bold">${hdd.free_gb || '--'}GB</span></div>
+              <div>LOAD: <span class="text-gray-200 font-bold">${(telem.load_average || [])[0]?.toFixed(2) || '--'}</span></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // -------------------------------------------------------------------------
+    // Hardware Actions (Torch, Photo, Vibrate)
+    // -------------------------------------------------------------------------
+    let torchState = false;
+    async function toggleTorch() {
+      torchState = !torchState;
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/hardware/torch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: torchState ? 'on' : 'off' })
+        });
+        const data = await res.json();
+        alert(`Flashlight: ${data.torch_state || data.status} (${data.message || 'ok'})`);
+      } catch (e) {
+        alert('Torch call failed: ' + e);
+      }
+    }
+
+    async function triggerPhoto() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/hardware/photo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ camera_id: 0 })
+        });
+        const data = await res.json();
+        alert(`Camera Snapshot: ${data.status}\nSaved to: ${data.filename || data.message}`);
+      } catch (e) {
+        alert('Photo call failed: ' + e);
+      }
+    }
+
+    async function triggerVibrate() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/hardware/vibrate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ duration_ms: 500 })
+        });
+        const data = await res.json();
+        alert(`Haptic Vibration: ${data.status} (500ms)`);
+      } catch (e) {
+        alert('Vibrate call failed: ' + e);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // Tailscale Serve HTTPS
+    // -------------------------------------------------------------------------
+    async function enableTailscaleServe() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/system/tailscale/serve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'start', port: 5000 })
+        });
+        const data = await res.json();
+        if (data.https_url) {
+          alert(`Tailscale Serve HTTPS Active!\nURL: ${data.https_url}\nClick OK to open.`);
+          window.open(data.https_url, '_blank');
+        } else {
+          alert(`Tailscale Serve result: ${data.status} (${data.message || data.output || 'active'})`);
+        }
+      } catch (e) {
+        alert('Tailscale Serve call failed: ' + e);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // System Actions (Wakelock & Backup)
+    // -------------------------------------------------------------------------
+    async function triggerWakelock() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/system/wakelock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'acquire' })
+        });
+        const data = await res.json();
+        alert(`Wake-lock status: ${data.status} (${data.output || data.message || 'active'})`);
+      } catch (e) {
+        alert('Wake-lock call failed: ' + e);
+      }
+    }
+
+    async function triggerBackup() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/system/backup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ send_telegram: true })
+        });
+        const data = await res.json();
+        alert(`Backup generated: ${data.filename} (${data.size_kb} KB)\nTelegram dispatched: ${data.telegram_dispatched}`);
+      } catch (e) {
+        alert('Backup call failed: ' + e);
+      }
+    }
+
+    function refreshAll() {
+      fetchHabits();
+      fetchFinance();
+      fetchNodes();
+    }
+
+    // Connect automatically on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      connectWebSocket();
+    });
+  </script>
+</body>
+</html>
+

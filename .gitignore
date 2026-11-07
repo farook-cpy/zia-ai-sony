@@ -1,0 +1,25 @@
+# Python Virtual Environment
+venv/
+.venv/
+env/
+
+# Environment Secrets & Credentials
+.env
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Runtime Databases, Logs & Storage
+data/
+*.db
+*.db-wal
+*.db-shm
+*.log
+
+# Termux & OS generated files
+.DS_Store
+Thumbs.db
+
